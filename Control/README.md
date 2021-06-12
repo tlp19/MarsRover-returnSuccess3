@@ -12,7 +12,7 @@ In Arduino IDE, go to _File>Preferences_ and in the _Additional Board Manager UR
 
 Then open the board manager in _Tools>Boards>Boards Manager..._. Search for "ESP32" and install "esp32 by Espressif Systems".
 
-Then in _Tools>Boards>_ select "DOIT ESP32 DEVKIT V1". Select the right COM port that your board is connected to (if you don't see it, you need to install the drivers at "https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers")
+Then in _Tools>Boards>_ select "DOIT ESP32 DEVKIT V1". Select the right COM port that your board is connected to (if you don't see it, you need to install [these drivers](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers)).
 
 #### Installing the libraries necessary for compiling the code
 
