@@ -6,7 +6,7 @@
 
 This code is meant to be compiled to uploaded to the ESP32 using the Arduino IDE 1.8.15
 
-#### Adding support for the board to the Arduino Guide
+#### Adding support for the board to the Arduino IDE
 
 In Arduino IDE, go to _File>Preferences_ and in the _Additional Board Manager URLs_ field, add "https://dl.espressif.com/dl/package_esp32_index.json". Click on OK.
 
