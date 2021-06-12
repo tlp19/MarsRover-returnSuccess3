@@ -37,7 +37,7 @@ void translateCoordinates(long x, long y) {
   else if ((x >= last_x) && (y < last_y)) {
     angle = (pi - asin(((x - sum_b_x) / L)) - theta * pi / 180L) * 180L / pi;
     if (abs(angle) > 180) {
-      angle = 360 - abs(angle);
+      angle = abs(angle) - 360;
     }
   }
   else if ((x >= last_x) && (y == last_y)) {

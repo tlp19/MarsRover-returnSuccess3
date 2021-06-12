@@ -14,9 +14,9 @@ const char *mqttServer = "3.8.124.71";
 int mqttPort = 1883;
 
 const char *mqttInTopicInstruction = "command";
-const char *mqttOutTopicBattery = "battery";
 const char *mqttOutTopicPosition = "rover";
 const char *mqttOutTopicObstacle = "obstacle";
+const char *mqttOutTopicBattery = "battery";
 
 //debug
 const char *mqttDebugTopic = "debug";

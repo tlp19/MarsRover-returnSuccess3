@@ -10,9 +10,17 @@
 
 // -------- INSTRUCTION QUEUE CONSTANTS --------
 
-//Obstacle detection trigger threshold
-const long obstacleDetectionThreshold = 100;
+//Measurements of real-life objects
+//const int sizeOfBall = 50;
+const int lengthOfRover = 150;
 
+//Obstacle detection trigger threshold set by Vision
+const int obstacleDetectionThreshold = 100;
+
+//Obstacle avoidance path parameters
+const String pathLength = String(obstacleDetectionThreshold+lengthOfRover);
+const String pathWidth = String(pathLength.toInt() / 2);
+const int avoidanceCost = pathLength.toInt();
 
 
 // -------- INSTRUCTION QUEUE VARIABLES --------
@@ -24,12 +32,6 @@ Instruction lastInstruction;
 
 //Stop Instruction
 const Instruction stopInstr = {"ST", ""};
-
-//Obstacle avoidance path parameters
-const int sizeOfBall = 50;
-const int avoidanceCost = (obstacleDetectionThreshold * 2) + sizeOfBall;
-const String pathLength = String(avoidanceCost);
-const String pathWidth = String(avoidanceCost / 2);
 
 //Obstacle Avoidance Routine Queue
 const std::deque<Instruction> initQueue{{"CL", "90"}, {"FW", pathWidth}, {"CC", "90"}, {"FW", pathLength}, {"CC", "90"}, {"FW", pathWidth}, {"CL", "90"}};

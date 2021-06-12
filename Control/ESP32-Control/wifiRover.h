@@ -5,8 +5,8 @@
 
 
 //WiFi credentials
-const char *SSID = "Tanguy";
-const char *password = "azerty12345";
+const char *SSID = "your_wifi_name";
+const char *password = "your_wifi_password";
 
 
 //Connects to WiFi using provided credentials

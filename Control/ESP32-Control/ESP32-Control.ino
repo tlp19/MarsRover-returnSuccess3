@@ -28,10 +28,10 @@ long xRoverCoordinate, yRoverCoordinate;    //to find the coordinates of an obst
 //Vision flags and variables
 std::map<String, String> obstacleList;      //list of current obstacles detected by vision
 String obstacleColorToAvoid;                //color of the obstacle to avoid
-bool obstaclesDetected;                     //true when Vision detects obstacles
 bool visionOverride;                        //true when we need to avoid an obstacle
 bool playingRoutine;                        //true is playing the obstacle avoidance routine
 
+bool obstaclesDetected;                     //debug: true when Vision detects obstacles
 
 
 // ---------------- DRIVE UART FUNCTIONS ----------------
@@ -68,8 +68,8 @@ void receiveDataDriveUART() {
   while (Serial1.available()) {
     fromDrive = Serial1.read();
     if ((fromDrive != '\r') && (fromDrive != '\n')) {
-      Serial.print("debug (from Drive)\t: received from Drive UART: ");
-      Serial.println(fromDrive);
+      //Serial.print("debug (from Drive)\t: received from Drive UART: ");
+      //Serial.println(fromDrive);
       if (fromDrive == 'd') {           //rover is done with last instruction
         driveWaiting = true;
         Serial.println("info (from Drive)\t: rover is ready for next instruction");
@@ -100,15 +100,18 @@ void receiveDataDriveUART() {
       if (readingY) {
         readingX = false;
         readingY = false;
+        //clean up the strings read
         xCoordinate.trim();
         yCoordinate.trim();
+        //update the coordinates of the rover stored internally
         xRoverCoordinate = xCoordinate.toInt();
         yRoverCoordinate = yCoordinate.toInt();
+        //send coordinates to Command
         String fullCoordinates = xCoordinate + ":" + yCoordinate;
+        mqttClient.publish(mqttOutTopicPosition, ArduinoStringToChar(fullCoordinates));
+
         Serial.print("info (from Drive)\t: coordinates of rover are: ");
         Serial.println(fullCoordinates);
-        //send coordinates to Command
-        mqttClient.publish(mqttOutTopicPosition, ArduinoStringToChar(fullCoordinates));
 
       } else if (readingTravelled) {
         readingTravelled = false;
@@ -120,7 +123,7 @@ void receiveDataDriveUART() {
         roverAngle = readAngle.toInt();
       }
     }
-    delay(10); //avoid collusion of data due to processing speed differences
+    delay(10); //avoid collision of data due to processing speed differences
   }
   fromDrive = '\0';
 }
@@ -143,8 +146,8 @@ void receiveDataVisionUART() {
   while (Serial2.available() && (fromVision != 'e')) {
     fromVision = Serial2.read();
     if ((fromVision != '\r') && (fromVision != '\n')) {
-      Serial.print("debug (from Vision)\t: received from Vision UART: ");
-      Serial.println(fromVision);
+      //Serial.print("debug (from Vision)\t: received from Vision UART: ");
+      //Serial.println(fromVision);
       if (fromVision == 'b') {          //beginning of current transmission
         //reset map at beginning
         obstacleList.clear();
@@ -158,25 +161,28 @@ void receiveDataVisionUART() {
           readColor += fromVision;
         } else if (readingDistance) {
           readDistance += fromVision;
-        } else {
-          mqttClient.publish(mqttDebugTopic, "VisionUART: error (else)");
         }
       }
     } else if (fromVision == '\r') {
-      mqttClient.publish(mqttDebugTopic, "VisionUART: end of current obst.");
       if (readingDistance) {
         readingDistance = false;
+        //clean up the strings read
         readColor.trim();
         readDistance.trim();
         //add the obstacle (color:distance) to the list of detected obstacles
         obstacleList[readColor] = readDistance;
+
         Serial.print("info (from Vision)\t: obstacle \'");
         Serial.print(readColor);
         Serial.print("\' has distance: ");
         Serial.println(readDistance);
+
+        //reset strings for next obstacle to be read
+        readColor = "";
+        readDistance = "";
       }
     }
-    delay(10); //avoid collusion of data due to processing speed differences
+    delay(10); //avoid collision of data due to processing speed differences
   }
   fromVision = '\0';
 }
@@ -188,8 +194,9 @@ void receiveDataVisionUART() {
 
 //Computes the coordinates of the obstacle that triggered the obstacle avoidance protocol, and sends them to Command
 void computeAndSendObstacleCoordinatesToCommand(String obstacleColor) {
-  long xObstacleCoordinate = xRoverCoordinate + ((obstacleDetectionThreshold + (sizeOfBall / 2)) * sin(roverAngle * pi / 180L));
-  long yObstacleCoordinate = yRoverCoordinate + ((obstacleDetectionThreshold + (sizeOfBall / 2)) * cos(roverAngle * pi / 180L));
+  long distanceToObstacle = lengthOfRover + (obstacleDetectionThreshold * 3 / 4);
+  long xObstacleCoordinate = xRoverCoordinate + ((distanceToObstacle) * sin(roverAngle * pi / 180L));
+  long yObstacleCoordinate = yRoverCoordinate + ((distanceToObstacle) * cos(roverAngle * pi / 180L));
   String obstacleCoordinates = String(xObstacleCoordinate) + ":" + String(yObstacleCoordinate);
   Serial.print("info (internal)\t\t: coordinates of obstacle are: ");
   Serial.println(obstacleCoordinates);
@@ -284,14 +291,32 @@ void loop() {
   if (!obstacleList.empty()) {
     obstaclesDetected = true;
     //iterate through all obstacles detected to see if one is in range
+    bool oneBallClose = false;
     for (auto i = obstacleList.begin(); i != obstacleList.end(); i++) {
+      Serial.print("[" + i->first + "," + i->second + "] ");
       if (i->second == "C") {
-        visionOverride = true;
+        oneBallClose = true;
         obstacleColorToAvoid = i->first;
       }
     }
+    if (oneBallClose) {
+      visionOverride = true;
+    } else {
+      visionOverride = false;
+      obstacleColorToAvoid = "";
+    }
+
+    //debug
+    if (visionOverride == true) {
+      Serial.print("OBSTACLE_AVOIDANCE");
+    } else {
+      Serial.print("no_obstance_avoidance");
+    }
+    Serial.println();
+
   } else {
     obstaclesDetected = false;
+    visionOverride = false;
   }
 
   //Read incoming data from Drive (if any)
@@ -431,8 +456,5 @@ void loop() {
         }
       } //no else, wait for Drive to be finished with prev. instruction
     }
-
-    // note: What if we have 2 (or more) obstacles in a row?
-
   }
 }
