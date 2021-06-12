@@ -11,8 +11,8 @@
 #define TXD2 17         //Pin 8 on adapter PCB - connected to arduino RX
 
 //Pins for Vision UART connection (Serial2)
-#define RXD3 2          //Pin 13 on adapter PCB
-#define TXD3 15         //Pin 12 on adapter PCB
+#define RXD3 22         //Pin 3 on adapter PCB
+#define TXD3 23         //Pin 2 on adapter PCB
 
 
 
