@@ -65,23 +65,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     theta = 0;
     last_x = 0;
     last_y = 0;
-    b_x = 0;
-    b_y = 0;
-    sum_b_x = 0;
-    sum_b_y = 0;
-  } else if (receivedCommand == "CO") {
-    //Convert the received coordinates to a Turn instruction and a Forward instruction
-    Serial.println("debug (from Command)\t: received Coordinate instruction");
-    //extract X and Y coordinates from receivedValue
-    int separatorIndex;
-    for (int indexC = 0; indexC < receivedValue.length(); indexC++) {
-      if (receivedValue.charAt(indexC) == ':') {
-        separatorIndex = indexC;
-      }
-    }
-    long receivedX = receivedValue.substring(0, separatorIndex).toInt();
-    long receivedY = receivedValue.substring(separatorIndex + 1).toInt();
-    buildQueueInstructions(receivedX, receivedY);
   } else {
     Instruction currentInstr = {receivedCommand, receivedValue};
     instructionQueue.push(currentInstr);

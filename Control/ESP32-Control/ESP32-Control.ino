@@ -68,8 +68,8 @@ void receiveDataDriveUART() {
   while (Serial1.available()) {
     fromDrive = Serial1.read();
     if ((fromDrive != '\r') && (fromDrive != '\n')) {
-      //Serial.print("debug (from Drive)\t: received from Drive UART: ");
-      //Serial.println(fromDrive);
+      Serial.print("debug (from Drive)\t: received from Drive UART: ");
+      Serial.println(fromDrive);
       if (fromDrive == 'd') {           //rover is done with last instruction
         driveWaiting = true;
         Serial.println("info (from Drive)\t: rover is ready for next instruction");
@@ -105,7 +105,9 @@ void receiveDataDriveUART() {
         yCoordinate.trim();
         //update the coordinates of the rover stored internally
         xRoverCoordinate = xCoordinate.toInt();
+        last_x = xRoverCoordinate;
         yRoverCoordinate = yCoordinate.toInt();
+        last_y = yRoverCoordinate;
         //send coordinates to Command
         String fullCoordinates = xCoordinate + ":" + yCoordinate;
         mqttClient.publish(mqttOutTopicPosition, ArduinoStringToChar(fullCoordinates));
@@ -121,6 +123,9 @@ void receiveDataDriveUART() {
         readingAngle = false;
         readAngle.trim();
         roverAngle = readAngle.toInt();
+        theta = roverAngle;
+        Serial.print("info (from Drive)\t: orientation of rover is: ");
+        Serial.println(roverAngle);
       }
     }
     delay(10); //avoid collision of data due to processing speed differences
@@ -286,7 +291,7 @@ void loop() {
   */
 
   //Read incoming data from Vision (if any)
-  receiveDataVisionUART();
+  //receiveDataVisionUART();
   //Check if we have an obstacle
   if (!obstacleList.empty()) {
     obstaclesDetected = true;
