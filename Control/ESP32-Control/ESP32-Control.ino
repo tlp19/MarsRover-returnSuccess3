@@ -187,7 +187,7 @@ void receiveDataVisionUART() {
         readDistance = "";
       }
     }
-    delay(10); //avoid collision of data due to processing speed differences
+    delay(15); //avoid collision of data due to processing speed differences
   }
   fromVision = '\0';
 }
@@ -291,7 +291,7 @@ void loop() {
   */
 
   //Read incoming data from Vision (if any)
-  //receiveDataVisionUART();
+  receiveDataVisionUART();
   //Check if we have an obstacle
   if (!obstacleList.empty()) {
     obstaclesDetected = true;
@@ -314,14 +314,17 @@ void loop() {
     //debug
     if (visionOverride == true) {
       Serial.print("OBSTACLE_AVOIDANCE");
+      mqttClient.publish(mqttDebugTopic, "CLOSE");
     } else {
       Serial.print("no_obstance_avoidance");
+      mqttClient.publish(mqttDebugTopic, "FAR");
     }
     Serial.println();
 
   } else {
     obstaclesDetected = false;
     visionOverride = false;
+    mqttClient.publish(mqttDebugTopic, "nothing detected");
   }
 
   //Read incoming data from Drive (if any)
@@ -347,7 +350,9 @@ void loop() {
         //decode and pass the instruction through UART to Drive
         sendInstructionDriveUART(lastInstruction);
         //delete instruction from top of queue
-        instructionQueue.pop();
+        if (!instructionQueue.empty()) {
+          instructionQueue.pop();
+        }
       }
       //no else, if instructionQueue is empty, don't do anything
     }
@@ -437,7 +442,9 @@ void loop() {
           //decode and pass the instruction through UART to Drive
           sendInstructionDriveUART(lastInstruction);
           //delete instruction from top of queue
+          if (!instructionQueue.empty()) {
           instructionQueue.pop();
+        }
         }
       }
 

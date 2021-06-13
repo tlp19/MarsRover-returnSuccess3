@@ -11,7 +11,7 @@ long L = 0;
 long angle = 0;
 long theta = 0;
 
-//Internal state variables for each interation of function
+//Current coordinates of rover
 long last_x = 0;
 long last_y = 0;
 
@@ -24,43 +24,36 @@ void translateCoordinates(long x, long y) {
   //find the angle to turn by
   if ((x == last_x) && (y == last_y)) {
     angle = 0;
-    Serial.println(0);
   }
   else if ((x >= last_x) && (y > last_y)) {
     angle = (asin(((x - last_x) / L)) - theta * pi / 180L) * 180L / pi;
     if (abs(angle) > 180) {
       angle = 360 - abs(angle);
     }
-    Serial.println(1);
   }
   else if ((x >= last_x) && (y < last_y)) {
     angle = (pi - asin(((x - last_x) / L)) - theta * pi / 180L) * 180L / pi;
     if (abs(angle) > 180) {
       angle = abs(angle) - 360;
     }
-    Serial.println(2);
   }
   else if ((x >= last_x) && (y == last_y)) {
     angle = (acos(((y - last_y) / L)) - theta * pi / 180L) * 180L / pi;
-    Serial.println(3);
   }
   else if ((x <= last_x) && (y > last_y)) {
     angle = (asin(((x - last_x) / L)) - theta * pi / 180L) * 180L / pi;
     if (abs(angle) > 180) {
       angle = 360 - abs(angle);
     }
-    Serial.println(4);
   }
   else if ((x <= last_x) && (y < last_y)) {
     angle = (-pi - asin(((x - last_x) / L)) - theta * pi / 180L) * 180L / pi;
     if (abs(angle) > 180) {
       angle = 360 - abs(angle);
     }
-    Serial.println(5);
   }
   else if ((x <= last_x) && (y == last_y)) {
     angle = ((acos(((y - last_y) / L)) - theta * pi / 180L) - pi) * 180L / pi;
-    Serial.println(6);
   }
 
 }

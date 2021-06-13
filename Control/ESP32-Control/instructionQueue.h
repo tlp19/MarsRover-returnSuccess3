@@ -12,11 +12,10 @@
 // -------- INSTRUCTION QUEUE CONSTANTS --------
 
 //Measurements of real-life objects
-//const int sizeOfBall = 50;
-const int lengthOfRover = 150;
+const int lengthOfRover = 200;
 
 //Obstacle detection trigger threshold set by Vision
-const int obstacleDetectionThreshold = 100;
+const int obstacleDetectionThreshold = 400;
 
 //Obstacle avoidance path parameters
 const String pathLength = String(obstacleDetectionThreshold + lengthOfRover);
@@ -103,7 +102,9 @@ String decodeInstr(const Instruction &input) {
     long Y = input.value.substring(separatorIndex + 1).toInt();
     //Create the equivalent FW and Turn instructions and insert at front of the instruction queue
     instructionQueue.pop();
-    insertFrontInstructionQueue(X, Y);
+    if((X!=last_x)||(Y!=last_y)){
+      insertFrontInstructionQueue(X, Y);
+    }
     //Return the newly inserted instruction
     if (!instructionQueue.empty()) {
       return decodeInstr(instructionQueue.front());
