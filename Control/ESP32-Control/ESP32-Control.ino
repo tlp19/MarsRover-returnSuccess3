@@ -1,3 +1,4 @@
+#include "flags.h"
 #include "wifiRover.h"
 #include "mqttRover.h"
 #include "instruction.h"
@@ -16,22 +17,18 @@
 
 
 
-// ---------------------- FLAGS -----------------------
+// ----------------- DRIVE & VISION VARIABLES ------------------
 
 
-//Drive flags and variables
-bool driveWaiting;                          //true if Drive is ready to receive an instruction
+//Drive variables
 long distanceTravelled;                     //if instruction is interrupted, gives the distance already travelled
 long roverAngle;                            //to find the coordinates of an obstacle
 long xRoverCoordinate, yRoverCoordinate;    //to find the coordinates of an obstacle
 
-//Vision flags and variables
+//Vision variables
 std::map<String, String> obstacleList;      //list of current obstacles detected by vision
 String obstacleColorToAvoid;                //color of the obstacle to avoid
-bool visionOverride;                        //true when we need to avoid an obstacle
-bool playingRoutine;                        //true is playing the obstacle avoidance routine
 
-bool obstaclesDetected;                     //debug: true when Vision detects obstacles
 
 
 // ---------------- DRIVE UART FUNCTIONS ----------------
@@ -231,9 +228,6 @@ void setup() {
   Serial2.begin(9600, SERIAL_8N1, RXD3, TXD3);      //Control-Vision UART
   Serial.println();
 
-  //Debug: test connection with FPGA
-  Serial2.print('d');
-
   //Setup wireless connections
   connectToWiFi();
   setupMQTT();
@@ -247,7 +241,6 @@ void setup() {
   xRoverCoordinate = 0;       //on startup, the coordinates of the rover are denoted as 0:0
   yRoverCoordinate = 0;
   //for Vision:
-  obstaclesDetected = false;
   obstacleColorToAvoid = "";
   visionOverride = false;     //first set to false to start in normal instr. queue
   playingRoutine = false;     //not playing obstacle avoidance routine on start-up of rover
@@ -289,7 +282,7 @@ void loop() {
       //mqttClient.publish(mqttOutTopicBattery, "100%"); //note: as connection is so physically established, we use abitrary data
     }
   */
-
+/*
   //Read incoming data from Vision (if any)
   receiveDataVisionUART();
   //Check if we have an obstacle
@@ -326,7 +319,7 @@ void loop() {
     visionOverride = false;
     mqttClient.publish(mqttDebugTopic, "nothing detected");
   }
-
+*/
   //Read incoming data from Drive (if any)
   receiveDataDriveUART();
 

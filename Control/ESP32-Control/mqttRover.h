@@ -2,10 +2,13 @@
 #define mqttrover_h
 
 #include <cassert>
-#include <PubSubClient.h>
+#include <PubSubClient.h>               //MQTT Client library
+
 #include "wifiRover.h"
 #include "instructionQueue.h"
-#include "coordinateInstructions.h"
+
+#include "flags.h"                      //for immediate 'ST' instruction support
+#include "coordinateInstructions.h"     //for 'RS' instruction support
 
 
 // -------- MQTT BROKER AND TOPICS --------
@@ -59,6 +62,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (receivedCommand == "ST") {
     //Stop the rover directly if we receive stop instruction from Command
     Serial1.print('x');
+    driveWaiting = false;
   } else if (receivedCommand == "RS") {
     //reset internal variables
     Serial.println("debug (from Command)\t: resetting internal variables");
