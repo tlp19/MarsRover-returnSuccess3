@@ -148,8 +148,6 @@ void receiveDataVisionUART() {
   while (Serial2.available() && (fromVision != 'e')) {
     fromVision = Serial2.read();
     if ((fromVision != '\r') && (fromVision != '\n')) {
-      //Serial.print("debug (from Vision)\t: received from Vision UART: ");
-      //Serial.println(fromVision);
       if (fromVision == 'b') {          //beginning of current transmission
         //reset map at beginning
         obstacleList.clear();
@@ -173,12 +171,6 @@ void receiveDataVisionUART() {
         readDistance.trim();
         //add the obstacle (color:distance) to the list of detected obstacles
         obstacleList[readColor] = readDistance;
-
-        Serial.print("info (from Vision)\t: obstacle \'");
-        Serial.print(readColor);
-        Serial.print("\' has distance: ");
-        Serial.println(readDistance);
-
         //reset strings for next obstacle to be read
         readColor = "";
         readDistance = "";
