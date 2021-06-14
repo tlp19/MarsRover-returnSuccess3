@@ -1,4 +1,4 @@
-   module EEE_IMGPROC(
+module EEE_IMGPROC(
 	// global clock & reset
 	clk,
 	reset_n,
@@ -78,6 +78,9 @@ wire         sop, eop, in_valid, out_ready;
 
 
 
+// Detect green areas
+wire green_detect;
+assign green_detect = ~(red[7]|red[6]|red[5]) & green[7] & ~(blue[7]|blue[6]|blue[5]);
 
 
 
@@ -109,7 +112,6 @@ assign conv_blue = blue/3 + prev_blue/3 + top_blue/3;
 
 wire [23:0] taps_sig;
 wire [23:0] taps_sig2;
-wire [2:0] taps_sig3;
 
 
 // Detect pink areas
@@ -119,16 +121,13 @@ integer ired;
 always @( conv_red )
     ired = conv_red;
 
+real testing;
+assing testing = 1.3;
+
 
 wire pink_detect;
-assign pink_detect = (conv_red[7]&conv_red[6]) & (conv_green[7]&~conv_green[6]) & ((conv_blue[7] & ~conv_blue[6] &~conv_blue[5])|(~conv_blue[7] & conv_blue[6] & conv_blue[5] & conv_blue[4]));
+assign pink_detect = (conv_red[7]&conv_red[5]) & (~conv_green[6]) & (conv_blue[7] & ~conv_blue[6] &~blue[5]);
 
-
-wire orange_detect;
-assign orange_detect = (conv_red[7]&conv_red[6]) & ((conv_green[7]&~conv_green[6]&conv_green[5]&conv_green[4])|(conv_green[7]&~conv_green[6])) & ((~conv_blue[7] & conv_blue[6] & ~conv_blue[5])|(~conv_blue[7] & ~conv_blue[6] & conv_blue[5] & conv_blue[4]));
-
-wire green_detect;
-assign green_detect = (~conv_red[7]&conv_red[6]) & (conv_green[7]) & ((~conv_blue[7] & conv_blue[6] & ~conv_blue[5]));
 
 
 // Detect red areas
@@ -138,74 +137,17 @@ assign red_detect = (conv_red[7]) & ~(conv_green[7]) & ~(conv_blue[7]);
 
 
 // Highlight detected areas
-reg [23:0] red_high;
+wire [23:0] red_high;
 assign grey = green[7:1] + red[7:2] + blue[7:2]; //Grey = green/2 + red/4 + blue/4
 //assign red_high  =  (red_detect) ? {8'hff, 8'h0, 8'h0} : {grey, grey, grey};
 //test conv filter
-reg pink_last, pink_last2, orange_last, orange_last2,green_last,green_last2;
+assign red_high  = (pink_detect |((x == 320) & (y ==240))) ? {8'hff, 8'h0, 8'h0} : {conv_red, conv_green, conv_blue};
 
-
-
-always@(posedge clk) begin
-	if (sop) begin
-	end
-	else if (in_valid) begin
-		pink_last2 <= pink_last;
-		pink_last <= pink_detect;
-		orange_last2 <= orange_last;
-		orange_last <= orange_detect;
-		green_last2 <= green_last;
-		green_last <= green_detect;
-		
-	end
-end
-
-wire [11:0] cur_binary;
-assign cur_binary =  {pink_last2, pink_last, pink_detect, orange_last2, orange_last, orange_detect,green_last2,green_last,green_detect, 3'b111};
-wire [11:0] above_binary;
-
-always@(*) begin
-	if(orange_detect |((x == 320) & (y ==240))) begin
-		red_high = {8'he6, 8'h7d, 8'h14};
-	end
-	else if (pink_detect) begin
-		red_high = {8'he6, 8'h14, 8'hd9};
-	end 
-	else if (green_detect) begin
-		red_high = {8'h22, 8'ha2, 8'h03};
-	end 
-	else begin
-		red_high = {conv_red, conv_green, conv_blue};
-	end
-end
-	
 // Show bounding box
-reg [23:0] new_image;
-wire pink_active;
-assign pink_active = (x == pinkl) | (x == pinkr) | (y == pinkt) | (y == pinkb);
-
-wire orange_active;
-assign orange_active = (x == orangel) | (x == oranger) | (y == oranget) | (y == orangeb);
-
-wire green_active;
-assign green_active = (x == greenl) | (x == greenr) | (y == greent) | (y == greenb);
-
-
-
-always@(*) begin
-	if(pink_active) begin
-		new_image = {8'he6, 8'h14, 8'hd9};
-	end
-	else if (orange_active) begin
-		new_image = {8'he6, 8'h7d, 8'h14};
-	end
-	else if (green_active) begin
-		new_image = {8'h0, 8'h7d, 8'h0};
-	end 
-	else begin
-		new_image = red_high;
-	end
-end
+wire [23:0] new_image;
+wire bb_active;
+assign bb_active = (x == left) | (x == right) | (y == top) | (y == bottom);
+assign new_image = bb_active ? bb_col : red_high;
 
 // Switch output pixels depending on mode switch
 // Don't modify the start-of-packet word - it's a packet discriptor
@@ -244,78 +186,35 @@ end
 
 
 //Find first and last red pixels
-reg [10:0] x_min, y_min, x_max, y_max,xpink_min, ypink_min, xpink_max, ypink_max,xorange_min, yorange_min, xorange_max, yorange_max,xgreen_min, ygreen_min, xgreen_max, ygreen_max;
+reg [10:0] x_min, y_min, x_max, y_max;
 always@(posedge clk) begin
-	if (((pink_detect & pink_last & pink_last2) &(above_binary[11] & above_binary[10] & above_binary[9]) ) & in_valid) begin	//Update bounds when the pixel is pink
-		if (x < xpink_min) xpink_min <= x;
-		if (x > xpink_max) xpink_max <= x;
-		if (y < ypink_min) ypink_min <= y;
-		ypink_max <= y;
+	if (red_detect & in_valid) begin	//Update bounds when the pixel is red
+		if (x < x_min) x_min <= x;
+		if (x > x_max) x_max <= x;
+		if (y < y_min) y_min <= y;
+		y_max <= y;
 	end
-	if ((orange_last & orange_last2 & orange_detect & (above_binary[8] & above_binary[7] & above_binary[6])) & in_valid) begin	//Update bounds when the pixel is orange
-		if (x < xorange_min) xorange_min <= x;
-		if (x > xorange_max) xorange_max <= x;
-		if (y < yorange_min) yorange_min <= y;
-		yorange_max <= y;
-	end
-	
-		if ((green_last & green_last2 & green_detect ) & (above_binary[5] & above_binary[4] & above_binary[3]) & in_valid) begin	//Update bounds when the pixel is orange
-		if (x < xgreen_min) xgreen_min <= x;
-		if (x > xgreen_max) xgreen_max <= x;
-		if (y < ygreen_min) ygreen_min <= y;
-		ygreen_max <= y;
-	end
-	
 	if (sop & in_valid) begin	//Reset bounds on start of packet
 		x_min <= IMAGE_W-11'h1;
 		x_max <= 0;
 		y_min <= IMAGE_H-11'h1;
 		y_max <= 0;
-		
-		xpink_min <= IMAGE_W-11'h1;
-		xpink_max <= 0;
-		ypink_min <= IMAGE_H-11'h1;
-		ypink_max <= 0;
-		
-		xorange_min <= IMAGE_W-11'h1;
-		xorange_max <= 0;
-		yorange_min <= IMAGE_H-11'h1;
-		yorange_max <= 0;
-		
-		xgreen_min <= IMAGE_W-11'h1;
-		xgreen_max <= 0;
-		ygreen_min <= IMAGE_H-11'h1;
-		ygreen_max <= 0;
-		
 	end
 end
 
 
 //Process bounding box at the end of the frame.
 reg [1:0] msg_state;
-reg [10:0] pinkl, pinkr, pinkt, pinkb, orangel,oranger, oranget, orangeb, greenl,greenr, greent, greenb;
+reg [10:0] left, right, top, bottom;
 reg [7:0] frame_count;
 always@(posedge clk) begin
 	if (eop & in_valid & packet_video) begin  //Ignore non-video packets
 		
 		//Latch edges for display overlay on next frame
-		
-		pinkl <= xpink_min;
-		pinkr <= xpink_max;
-		pinkt <= ypink_min;
-		pinkb <= ypink_max;
-		
-		orangel <= xorange_min;
-		oranger <= xorange_max;
-		oranget <= yorange_min;
-		orangeb <= yorange_max;
-		
-		greenl <= xgreen_min;
-		greenr <= xgreen_max;
-		greent <= ygreen_min;
-		greenb <= ygreen_max;
-//
-//
+		left <= x_min;
+		right <= x_max;
+		top <= y_min;
+		bottom <= y_max;
 //
 //		left <=  10'b1111111111;
 //		right <= 10'b1111111111;
@@ -347,9 +246,6 @@ wire msg_buf_empty;
 
 `define RED_BOX_MSG_ID "RBB"
 
-reg [31:0] outmsg; 
-
-
 always@(*) begin	//Write words to FIFO as state machine advances
 	case(msg_state)
 		2'b00: begin
@@ -357,17 +253,17 @@ always@(*) begin	//Write words to FIFO as state machine advances
 			msg_buf_wr = 1'b0;
 		end
 		2'b01: begin
-		
 			msg_buf_in = `RED_BOX_MSG_ID;	//Message ID
 			msg_buf_wr = 1'b1;
 		end
 		2'b10: begin
-			msg_buf_in = {6'b0,(pinkr-pinkl),  6'b0,(oranger-orangel)};	//Top left coordinate
+			msg_buf_in = {8'b0, colorspace};	//Top left coordinate
 			//msg_buf_in =  {5'b0, x_min, 5'b0, y_min};
 			msg_buf_wr = 1'b1;
 		end
 		2'b11: begin
-			msg_buf_in = {6'b0,(greenr-greenl),16'b0}  ; //Bottom right coordinate
+			//msg_buf_in = {5'b0, x_max, 5'b0, y_max}; //Bottom right coordinate
+			msg_buf_in = 32'b11;
 			msg_buf_wr = 1'b1;
 		end
 	endcase
@@ -426,13 +322,6 @@ shiftreg2	shiftreg2_inst (
 	.shiftin ( cur_img ),
 	.shiftout ( top_img ),
 	.taps ( taps_sig2 )
-	);
-binaryabove	binaryabove_inst (
-	.clken ( in_valid ),
-	.clock ( clk ),
-	.shiftin ( cur_binary ),
-	.shiftout ( above_binary ),
-	.taps ( taps_sig )
 	);
 
 
@@ -506,3 +395,4 @@ assign msg_buf_rd = s_chipselect & s_read & ~read_d & ~msg_buf_empty & (s_addres
 
 
 endmodule
+
