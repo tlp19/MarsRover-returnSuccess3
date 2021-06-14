@@ -47,10 +47,6 @@ Instruction lastRoutineInstruction;
 void insertFrontInstructionQueue(long x, long y) {
   //first find equivalent distance and angle
   translateCoordinates(x, y);
-  Serial.println(x);
-  Serial.println(y);
-  Serial.println(L);
-  Serial.println(angle);
   //new empty instruction queue
   std::queue<Instruction> newInstructionQueue;
   //build turn instruction

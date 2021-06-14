@@ -3,74 +3,83 @@
 
 #include <math.h>
 
-const float pi = 3.14159265359;
+//Coordinates and orientation of the rover
+long theta = 0;
+float last_x = 0;
+float last_y = 0;
 
-//Common variables for both functions
+//Common variables for functions
 long L = 0;
 long angle = 0;
-long theta = 0;
 
-//Internal state variables for each interation of function
-long last_x = 0;
-long last_y = 0;
-float b_x = 0;
-float b_y = 0;
-float sum_b_x = 0;
-float sum_b_y = 0;
 
 //Translate coordinate instruction into distance and angle parameters
 void translateCoordinates(long x, long y) {
+  Serial.println("x = " + String(last_x));
+  Serial.println("y = " + String(last_y));
+  Serial.println("theta = " + String(theta));
 
-  b_x = L * sin((theta) * pi / 180L);
-  b_y = L * cos((theta) * pi / 180L);
-  sum_b_x += b_x;
-  sum_b_y += b_y;
-
-  //find the distance to travel by
+  //compute the distance that we need to travel
   L = sqrt((((x) - (last_x)) * ((x) - (last_x))) + (((y) - (last_y)) * ((y) - (last_y))));
+  Serial.println("L = " + String(L));
 
-  //find the angle to turn by
+  //compute the angle that we need to turn by
   if ((x == last_x) && (y == last_y)) {
     angle = 0;
     Serial.println(0);
   }
-  else if ((x >= last_x) && (y > last_y)) {
-    angle = (asin(((x - sum_b_x) / L)) - theta * pi / 180L) * 180L / pi;
+  else if (((x >= last_x) && (y >= last_y)) || ((x <= last_x) && (y >= last_y))) {
+    float arg = ((x - last_x) / L);
+    if (arg > 1) {
+      arg = arg - 1;
+      angle = (asin(arg) + PI / 2 - theta * PI / 180L) * 180L / PI;
+    } else if (arg < -1) {
+      arg = arg + 1;
+      angle = (asin(arg) - PI / 2 - theta * PI / 180L) * 180L / PI;
+    }
+    else {
+      angle = (asin(arg) - theta * PI / 180L) * 180L / PI;
+    }
     if (abs(angle) > 180) {
       angle = 360 - abs(angle);
     }
     Serial.println(1);
   }
-  else if ((x >= last_x) && (y < last_y)) {
-    angle = (pi - asin(((x - sum_b_x) / L)) - theta * pi / 180L) * 180L / pi;
+  else if ((x >= last_x) && (y <= last_y)) {
+    float arg = ((x - last_x) / L);
+    if (arg > 1) {
+      arg = arg - 1;
+      angle = (PI - asin(arg) + PI / 2 - theta * PI / 180L) * 180L / PI;
+    } else if (arg < -1) {
+      arg = arg + 1;
+      angle = (PI - asin(arg) - PI / 2 - theta * PI / 180L) * 180L / PI;
+    }
+    else {
+      angle = (PI - asin(arg) - theta * PI / 180L) * 180L / PI;
+    }
     if (abs(angle) > 180) {
-      angle = abs(angle) - 360;
+      angle = 360 - abs(angle);
     }
     Serial.println(2);
   }
-  else if ((x >= last_x) && (y == last_y)) {
-    angle = (acos(((y - sum_b_y) / L)) - theta * pi / 180L) * 180L / pi;
+  else if ((x <= last_x) && (y <= last_y)) {
+    float arg = ((x - last_x) / L);
+    if (arg > 1) {
+      arg = arg - 1;
+      angle = (- PI - asin(arg) + PI / 2 - theta * PI / 180L) * 180L / PI;
+    } else if (arg < -1) {
+      arg = arg + 1;
+      angle = (- PI - asin(arg) - PI / 2 - theta * PI / 180L) * 180L / PI;
+    }
+    else {
+      angle = (-PI - asin(arg) - theta * PI / 180L) * 180L / PI;
+    }
+    if (abs(angle) > 180) {
+      angle = 360 - abs(angle);
+    }
     Serial.println(3);
   }
-  else if ((x <= last_x) && (y > last_y)) {
-    angle = (asin(((x - sum_b_x) / L)) - theta * pi / 180L) * 180L / pi;
-    if (abs(angle) > 180) {
-      angle = 360 - abs(angle);
-    }
-    Serial.println(4);
-  }
-  else if ((x <= last_x) && (y < last_y)) {
-    angle = (-pi - asin(((x - sum_b_x) / L)) - theta * pi / 180L) * 180L / pi;
-    if (abs(angle) > 180) {
-      angle = 360 - abs(angle);
-    }
-    Serial.println(5);
-  }
-  else if ((x <= last_x) && (y == last_y)) {
-    angle = ((acos(((y - sum_b_y) / L)) - theta * pi / 180L) - pi) * 180L / pi;
-    Serial.println(6);
-  }
-
+  Serial.println("angle = " + String(angle));
 }
 
 #endif

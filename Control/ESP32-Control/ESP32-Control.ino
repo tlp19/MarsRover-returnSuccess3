@@ -197,8 +197,8 @@ void receiveDataVisionUART() {
 //Computes the coordinates of the obstacle that triggered the obstacle avoidance protocol, and sends them to Command
 void computeAndSendObstacleCoordinatesToCommand(String obstacleColor) {
   long distanceToObstacle = lengthOfRover + (obstacleDetectionThreshold * 3 / 4);
-  long xObstacleCoordinate = xRoverCoordinate + ((distanceToObstacle) * sin(roverAngle * pi / 180L));
-  long yObstacleCoordinate = yRoverCoordinate + ((distanceToObstacle) * cos(roverAngle * pi / 180L));
+  long xObstacleCoordinate = xRoverCoordinate + ((distanceToObstacle) * sin(roverAngle * PI / 180L));
+  long yObstacleCoordinate = yRoverCoordinate + ((distanceToObstacle) * cos(roverAngle * PI / 180L));
   String obstacleCoordinates = String(xObstacleCoordinate) + ":" + String(yObstacleCoordinate);
   Serial.print("info (internal)\t\t: coordinates of obstacle are: ");
   Serial.println(obstacleCoordinates);

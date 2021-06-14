@@ -58,7 +58,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print(receivedValue);
   Serial.println("\'");
 
-  //add the instruction to queue of instruction (or execute directly if Stop instr.)
+  //add the instruction to queue of instruction (or execute directly if Stop or Reset instr.)
   if (receivedCommand == "ST") {
     //Stop the rover directly if we receive stop instruction from Command
     Serial1.print('x');
@@ -95,21 +95,15 @@ void reconnect() {
     Serial.print("...");
     String clientId = "ESP32Client-";
     clientId += String(random(0xffff), HEX);
-
     mqttClient.connect(clientId.c_str());
     if (mqttClient.connected()) {
       // subscribe to topics
       mqttClient.subscribe(mqttInTopicInstruction);
-      //mqttClient.subscribe(mqttInTopicCoordinates);
       Serial.println("Connected and subscribed.");
     } else {
       // connection failed
       Serial.print(" error while connecting to broker: ");
-      Serial.print(mqttClient.state()); //will provide more information on why it failed.
-      if (mqttClient.state() == -2) {
-        Serial.print(" (the network connection failed)");
-      }
-      Serial.println();
+      Serial.println(mqttClient.state()); //will provide more information on why it failed.
     }
   }
 }
