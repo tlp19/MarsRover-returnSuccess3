@@ -589,7 +589,8 @@ void directionControl(char command, long d_a) {
     int y = d_a;
     if (y - abs(total_y) < 2) {
       stopRover();
-      L = -abs(total_y);
+      L = -(abs(total_y));
+      Serial.println("L1: " + String(L));
       sendCoordinates();
       command = '\0';
       d = 0;
@@ -627,14 +628,14 @@ void stopRover() {
 
 void stopRoverOnCommand() {
   if (command == 'x') {
+    Serial1.println('d');
     digitalWrite(pwmr, 0);
     digitalWrite(pwml, 0);
     command = '\0';
 
     L = abs(total_y);
     long distanceTravelled = L;
-    sendCoordinates();
-    Serial1.print('t');
+    sendCoordinatesOnCommand();
     Serial1.println(String(distanceTravelled));
     UARTdataSent = false;
   }
@@ -646,6 +647,7 @@ void sendCoordinates() {
   if (!UARTdataSent) {
 
     // theta += angle;                      // increment theta with angle
+    Serial.println("L2: " + String(L));
     Serial.println("angle: " + String(angle));
     Serial.println("theta: " + String(theta));
 
@@ -663,6 +665,33 @@ void sendCoordinates() {
     Serial1.print('a');
     Serial1.println(String(theta));
     Serial1.println('d');
+    UARTdataSent = true;
+
+  }
+}
+
+void sendCoordinatesOnCommand() {
+  if (!UARTdataSent) {
+
+    // theta += angle;                      // increment theta with angle
+    Serial.println("L2: " + String(L));
+    Serial.println("angle: " + String(angle));
+    Serial.println("theta: " + String(theta));
+
+    long b_x = L * sin(theta * pi / 180L);  // find last x-point
+    long b_y = L * cos(theta * pi / 180L);  // find last y-point
+
+    last_x += b_x;                  // find x-coordinates
+    last_y += b_y;                  // find y-coordinates
+
+    Serial.println("x-coordinates: " + String(last_x));
+    Serial.println("y-coordinates: " + String(last_y));
+
+    String coordinatesToSend = "x" + String(last_x) + "y" + String(last_y);
+    Serial1.println(coordinatesToSend);
+    Serial1.print('a');
+    Serial1.println(String(theta));
+    Serial1.print('t');
     UARTdataSent = true;
 
   }
