@@ -157,6 +157,7 @@ void receiveDataVisionUART() {
         readingColor = false;
         readingDistance = true;
       } else {
+        //append incoming characters to the string we're reading
         if (readingColor) {
           readColor += fromVision;
         } else if (readingDistance) {
