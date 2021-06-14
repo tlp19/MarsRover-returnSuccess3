@@ -1,0 +1,47 @@
+--parallel_add DEVICE_FAMILY="MAX 10" MSW_SUBTRACT="NO" PIPELINE=0 REPRESENTATION="UNSIGNED" RESULT_ALIGNMENT="LSB" SHIFT=0 SIZE=2 WIDTH=12 WIDTHR=13 data result
+--VERSION_BEGIN 16.1 cbx_cycloneii 2016:10:24:15:04:16:SJ cbx_lpm_add_sub 2016:10:24:15:04:16:SJ cbx_mgl 2016:10:24:15:05:03:SJ cbx_nadder 2016:10:24:15:04:16:SJ cbx_padd 2016:10:24:15:04:16:SJ cbx_parallel_add 2016:10:24:15:04:16:SJ cbx_stratix 2016:10:24:15:04:16:SJ cbx_stratixii 2016:10:24:15:04:16:SJ cbx_util_mgl 2016:10:24:15:04:16:SJ  VERSION_END
+
+
+-- Copyright (C) 2016  Intel Corporation. All rights reserved.
+--  Your use of Intel Corporation's design tools, logic functions 
+--  and other software and tools, and its AMPP partner logic 
+--  functions, and any output files from any of the foregoing 
+--  (including device programming or simulation files), and any 
+--  associated documentation or information are expressly subject 
+--  to the terms and conditions of the Intel Program License 
+--  Subscription Agreement, the Intel Quartus Prime License Agreement,
+--  the Intel MegaCore Function License Agreement, or other 
+--  applicable license agreement, including, without limitation, 
+--  that your use is for the sole purpose of programming logic 
+--  devices manufactured by Intel and sold by Intel or its 
+--  authorized distributors.  Please refer to the applicable 
+--  agreement for further details.
+
+
+FUNCTION soft (in)
+RETURNS ( out);
+
+--synthesis_resources = lut 13 
+SUBDESIGN par_add_u9e
+( 
+	data[23..0]	:	input;
+	result[12..0]	:	output;
+) 
+VARIABLE
+	add1_result[12..0]	:	WIRE;
+	sft2a[12..0] : soft;
+	sft3a[12..0] : soft;
+	sft4a[12..0] : soft;
+	w64w	: WIRE;
+	w80w[12..0]	: WIRE;
+
+BEGIN 
+	add1_result[] = sft2a[].out + sft3a[].out;
+	sft2a[].in = ( w64w, ( data[11..11], ( data[10..10], ( data[9..9], ( data[8..8], ( data[7..7], ( data[6..6], ( data[5..5], ( data[4..4], ( data[3..3], ( data[2..2], ( data[1..0]))))))))))));
+	sft3a[].in = ( w64w, ( data[23..23], ( data[22..22], ( data[21..21], ( data[20..20], ( data[19..19], ( data[18..18], ( data[17..17], ( data[16..16], ( data[15..15], ( data[14..14], ( data[13..12]))))))))))));
+	sft4a[].in = add1_result[];
+	result[12..0] = w80w[12..0];
+	w64w = B"0";
+	w80w[] = ( sft4a[12..11].out, sft4a[10..9].out, sft4a[8..7].out, sft4a[6..5].out, sft4a[4..3].out, sft4a[2..1].out, sft4a[0..0].out);
+END;
+--VALID FILE
