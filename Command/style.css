@@ -1,0 +1,190 @@
+/*
+  
+    body, html {
+    height: 100%;
+    font-family: "Inconsolata", sans-serif;
+    }
+
+    .menu {
+    display: none;
+    }
+
+  */
+
+/* Split the screen in half: vertical*/
+.split {
+  height: 100%;
+  width: 50%;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  overflow-x: hidden;
+  padding-top: 20px;
+}
+/* Split the screen in half: vertical for battery and topic*/
+.split2 {
+  height: 25%;
+  width: 70%;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  overflow-x: hidden;
+  padding-left: 40px;
+  padding-top: 100px;
+}
+/* Split the screen in half: horizontal*/
+.splitheight {
+  height: 75%;
+  width: 50%;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  overflow-x: none;
+}
+/* Control the each sides */
+.left {
+  left: 0;
+}
+.right {
+  right: 0;
+}
+.top {
+  top: 0;
+}
+.bottom {
+  top: 680px;
+  bottom: 760px;
+}
+
+/* If you want the content centered horizontally and vertically */
+.centered {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+/* CSS for the slider for the speed settings */
+.slidecontainer {
+  width: 100%;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 15px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.6;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: blue;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: blue;
+  cursor: pointer;
+}
+
+/* CSS for the Graphic/Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 10; /* Sit on top of everything thus needs to be bigger than the rest*/
+  padding-top: 10px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgba(0, 0, 0, 0.048); /* Fallback color */
+  background-color: rgba(0, 0, 0, 0.048); /* Black w/ opacity */
+}
+
+/* Modal Content/Box: set up the characteristics of the Graphic once zoomed*/
+.modal-content {
+  margin: auto;
+  display: block;
+  width: 100%;
+  max-width: 1100px;
+  height: 930px;
+}
+
+/* The Close Button for the popover window*/
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* CSS to define the Progress Bar for the battery data recieved */
+progress {
+  border: double;
+  width: 180px;
+  height: 10px;
+  background: black;
+}
+
+progress {
+  color: lightgray;
+}
+
+.progress-default::-webkit-progress-value {
+  background-color: lightgray;
+}
+/* CSS for the color of the progress bar to change with respect to its value */
+.progress-100::-webkit-progress-value {
+  background-color: green;
+}
+
+.progress-50::-webkit-progress-value {
+  background-color: yellow;
+}
+
+.progress-20::-webkit-progress-value {
+  background-color: red;
+}
+
+progress::-webkit-progress-bar {
+  background: lightgray;
+}
+
+#messages {
+  margin-top: 12px;
+  margin-bottom: 12px;
+  padding: 12px;
+  width: 100%;
+  display: inline-block;
+  border: 1px solid black;
+  max-height: 250px;
+  min-height: 250px;
+  overflow: scroll;
+}
+#messages span {
+  overflow-y: scroll;
+  overflow: scroll;
+}
