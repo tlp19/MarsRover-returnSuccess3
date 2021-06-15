@@ -235,7 +235,7 @@ int main()
  	 	      	#endif
 
 while(1){
-     	FILE* ser = fopen("/dev/uart_0", "rb+");
+     	FILE* ser = fopen("/dev/uart_0", "rb+");   //opens and writes to uart_0
          if(ser){
  	 	     char* buffer;
 			 //Read messages from the image processor and print them on the terminal
@@ -248,29 +248,26 @@ while(1){
 				  if(str == "00524242") {
 					  buffer[0] = '\0';
 				  }
-				  strcat (buffer, str);
-				  //printf("%z", strlen(buffer));
+				  strcat (buffer, str);   //adds the next word received into the bugger
+	
 
-				  if(strlen(buffer) > 23)
+				  if(strlen(buffer) > 23) //check if buffer is full
 				  { printf(buffer);
 					char pink[5];
-					strncpy(pink,&buffer[16],4);
+					strncpy(pink,&buffer[16],4); //4 bits after 15 correspond to pink distance
 					pink[4] = '\0';
-					int numberp = (int)strtol(pink, NULL, 16);
+					int numberp = (int)strtol(pink, NULL, 16); 
 					printf("pink is %i", numberp);
 					fprintf(ser,"b");
 					  if(numberp < 2000){
-						   fprintf(ser,"cP");
-						   if(numberp > 90){
-						   fprintf(ser,"dC");
+						   fprintf(ser,"cP");	//color pink is detected
+						   if(numberp > 90){	//pink ball is close
+						   fprintf(ser,"dC");  
 						   fprintf(ser,"\r");
-						   //fprintf(ser,"e");
 						   }else{
-							   fprintf(ser,"dF");
+							   fprintf(ser,"dF"); //pink ball is far
 							   fprintf(ser,"\r");
-							   //fprintf(ser,"e");
 						   }
-						   //fprintf(ser,"z");
 					  }
 					  char orange[5];
 					  strncpy(orange,&buffer[20],4);
