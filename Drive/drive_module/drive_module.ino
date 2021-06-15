@@ -513,7 +513,7 @@ void directionControl(char command, long d_a) {
       stopRover();
       L = abs(total_y);     // distance travelled 
       sendCoordinates();
-      command = '\0';       // reseting the instructaion 
+      command = '\0';       // reseting the instruction 
       d = 0;
       total_x1 = 0;         // resetting the sensor's coordinates
       total_y1 = 0;
@@ -523,26 +523,27 @@ void directionControl(char command, long d_a) {
       // if y-coordinates do not match with the desired distance, then move foward
       DIRRstate = LOW;
       DIRLstate = LOW;
-      UARTdataSent = false;
+      UARTdataSent = false; // boolean flag set to false as rover is still moving
     }
   }
 
   // rotating clockwise
   else if (command == 'r') {
-    digitalWrite(pwmr, HIGH);   //setting right motor speed at maximum
-    digitalWrite(pwml, HIGH);   //setting left motor speed at maximum
-    long a = d_a + ((d_a * (float)20) / (float)360); // add offset to compensate for sensor innacuracy
+    digitalWrite(pwmr, HIGH);   
+    digitalWrite(pwml, HIGH);   
+    // add offset to compensate for sensor innacuracy
+    long a = d_a + ((d_a * (float)20) / (float)360);  
     // compare the computed angle from sensor's x-coordinates with the desired angle
     if (a - ((abs(total_x) * (float)180) / ((float)135 * PI)) < 1) {
       stopRover();
       if (!UARTdataSent) {
-        // send back to control the angle: need to remove the offset from the measured angle 
+        // send the angle back to control: need to remove the offset from the measured angle 
         angle = (((abs(total_x) * (float)180) / ((float)135 * PI)) - ((d_a * (float)20) / (float)360) + (float)1);
         theta += angle; //the angle should be added to the previous angles in order to compute the current coordinates
         Serial1.print('a');
         Serial1.println(String(theta));
         Serial1.println('d');
-        UARTdataSent = true;
+        UARTdataSent = true;      // flags allows to only execute the loop once
       }
       command = '\0';
       d = 0;
@@ -559,14 +560,14 @@ void directionControl(char command, long d_a) {
   }
   // rotating counterclockwise
   else if (command == 'l') {
-    digitalWrite(pwmr, HIGH);   //setting right motor speed at maximum
-    digitalWrite(pwml, HIGH);   //setting left motor speed at maximum
+    digitalWrite(pwmr, HIGH);   
+    digitalWrite(pwml, HIGH);   
     long a = d_a + ((d_a * (float)20) / (float)360); // add offset to compensate for sensor innacuracy
     // compare the computed angle from sensor's x-coordinates with the desired angle
     if (a - ((abs(total_x) * (float)180) / ((float)135 * PI)) < 1) {
       stopRover();
       if (!UARTdataSent) {
-        // send back to control the angle: need to remove the offset from the measured angle
+        // send the angle back to control: need to remove the offset from the measured angle
         angle = -(((abs(total_x) * (float)180) / ((float)135 * PI)) - ((d_a * (float)20) / (float)360) + (float)1 );  // angle is negative beacause it is counterclockwise
         theta += angle; //the angle should be added to the previous angle in order to compute the current coordinates
         Serial1.print('a');
@@ -653,7 +654,6 @@ void stopRoverOnCommand() {
 void sendCoordinates() {
   if (!UARTdataSent) {
 
-    // theta += angle;                      // increment theta with angle
     Serial.println("L: " + String(L));
     Serial.println("angle: " + String(angle));
     Serial.println("theta: " + String(theta));
@@ -672,7 +672,7 @@ void sendCoordinates() {
     Serial1.print('a');
     Serial1.println(String(theta));
     Serial1.println('d');
-    UARTdataSent = true;
+    UARTdataSent = true;          // set flag to true so loop will not execute again 
 
   }
 }
