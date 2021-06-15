@@ -505,17 +505,17 @@ void directionControl(char command, long d_a) {
   // moving forwards
   if (command == 'f') {
     // initialize speed when it moves foward
-    digitalWrite(pwmr, HIGH);
-    digitalWrite(pwml, HIGH);
+    digitalWrite(pwmr, HIGH);   //setting right motor speed at maximum
+    digitalWrite(pwml, HIGH);   //setting left motor speed at maximum
     int y = d_a;
     // compare sensor's y-coordinates with the desired distance
     if (y - abs(total_y) < 2) { //use absolute value to compute the difference between to positive values
       stopRover();
-      L = abs(total_y);
+      L = abs(total_y);     // distance travelled 
       sendCoordinates();
-      command = '\0';
+      command = '\0';       // reseting the instructaion 
       d = 0;
-      total_x1 = 0;
+      total_x1 = 0;         // resetting the sensor's coordinates
       total_y1 = 0;
       distance_x = 0;
       distance_y = 0;
@@ -529,16 +529,16 @@ void directionControl(char command, long d_a) {
 
   // rotating clockwise
   else if (command == 'r') {
-    digitalWrite(pwmr, HIGH);
-    digitalWrite(pwml, HIGH);
+    digitalWrite(pwmr, HIGH);   //setting right motor speed at maximum
+    digitalWrite(pwml, HIGH);   //setting left motor speed at maximum
     long a = d_a + ((d_a * (float)20) / (float)360); // add offset to compensate for sensor innacuracy
     // compare the computed angle from sensor's x-coordinates with the desired angle
-    if (a - ((abs(total_x) * (float)180) / ((float)130 * PI)) < 1) {
+    if (a - ((abs(total_x) * (float)180) / ((float)135 * PI)) < 1) {
       stopRover();
       if (!UARTdataSent) {
         // send back to control the angle: need to remove the offset from the measured angle 
-        angle = (((abs(total_x) * (float)180) / ((float)130 * PI)) - ((d_a * (float)20) / (float)360) + (float)1);
-        theta += angle; //the angle should be added to the previous angle in order to compute the current coordinates
+        angle = (((abs(total_x) * (float)180) / ((float)135 * PI)) - ((d_a * (float)20) / (float)360) + (float)1);
+        theta += angle; //the angle should be added to the previous angles in order to compute the current coordinates
         Serial1.print('a');
         Serial1.println(String(theta));
         Serial1.println('d');
@@ -551,7 +551,7 @@ void directionControl(char command, long d_a) {
       distance_x = 0;
       distance_y = 0;
     } else {
-      // if the desired angle does not match computed angle, then move turn clockwise
+      // if the desired angle does not match the computed angle, then move turn clockwise
       DIRRstate = HIGH;
       DIRLstate = LOW;
       UARTdataSent = false;
@@ -559,15 +559,15 @@ void directionControl(char command, long d_a) {
   }
   // rotating counterclockwise
   else if (command == 'l') {
-    digitalWrite(pwmr, HIGH);
-    digitalWrite(pwml, HIGH);
+    digitalWrite(pwmr, HIGH);   //setting right motor speed at maximum
+    digitalWrite(pwml, HIGH);   //setting left motor speed at maximum
     long a = d_a + ((d_a * (float)20) / (float)360); // add offset to compensate for sensor innacuracy
     // compare the computed angle from sensor's x-coordinates with the desired angle
-    if (a - ((abs(total_x) * (float)180) / ((float)130 * PI)) < 1) {
+    if (a - ((abs(total_x) * (float)180) / ((float)135 * PI)) < 1) {
       stopRover();
       if (!UARTdataSent) {
         // send back to control the angle: need to remove the offset from the measured angle
-        angle = -(((abs(total_x) * (float)180) / ((float)130 * PI)) - ((d_a * (float)20) / (float)360) + (float)1 );  // angle is negative beacause it is counterclockwise
+        angle = -(((abs(total_x) * (float)180) / ((float)135 * PI)) - ((d_a * (float)20) / (float)360) + (float)1 );  // angle is negative beacause it is counterclockwise
         theta += angle; //the angle should be added to the previous angle in order to compute the current coordinates
         Serial1.print('a');
         Serial1.println(String(theta));
@@ -581,7 +581,7 @@ void directionControl(char command, long d_a) {
       distance_x = 0;
       distance_y = 0;
     } else {
-      // if the desired angle does not match computed angle, then move turn counterclockwise
+      // if the desired angle does not the match computed angle, then move turn counterclockwise
       DIRRstate = LOW;
       DIRLstate = HIGH;
       UARTdataSent = false;
@@ -590,8 +590,8 @@ void directionControl(char command, long d_a) {
   //moving backwards
   else if (command == 'b') {
     // initialize speed when it moves backwards
-    digitalWrite(pwmr, HIGH);
-    digitalWrite(pwml, HIGH);
+    digitalWrite(pwmr, HIGH);   //setting right motor speed at maximum
+    digitalWrite(pwml, HIGH);   //setting left motor speed at maximum
     int y = d_a;
     // compare sensor's y-coordinates with the desired distance
     if (y - abs(total_y) < 2) {
@@ -816,7 +816,8 @@ void sampling() {
 
   // send current to energy
   long I_in = (current_mA * vb * 330) / (vpd * 890);
-  //Serial.println("Current: "+String(I_in));
+  //Serial1.println('i');
+  //Serial1.println("Current: "+String(I_in));
 }
 
 float saturation( float sat_input, float uplim, float lowlim) { // Saturatio function
