@@ -1028,7 +1028,8 @@
   // Let the progress bar change color with ranges: [0:20]=red | [21:50]=yellow | [51:100]= green;
       function getBatteryClasses(name){
         let classes = "w3-right ";
-        classes += (document.getElementById(name).value > "50.00") ? "progress-100" : ((document.getElementById(name).value > "20.00") ? "progress-50" : "progress-20");
+        classes += (document.getElementById(name).value > "50.00") ? "progress-100" : 
+                   ((document.getElementById(name).value > "20.00") ? "progress-50" : "progress-20");
         return classes;
       }
   
