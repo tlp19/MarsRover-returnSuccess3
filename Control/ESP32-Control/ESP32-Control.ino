@@ -42,7 +42,7 @@ void sendInstructionDriveUART(const Instruction &toSend) {
   Serial.println(sendInstruction);
   Serial1.print(sendInstruction);
 
-  //debug
+  //debug logs
   String debugMsg = "DriveUART: sending " + sendInstruction;
   mqttClient.publish(mqttDebugTopic, ArduinoStringToChar(debugMsg));
 }
@@ -65,8 +65,8 @@ void receiveDataDriveUART() {
   while (Serial1.available()) {
     fromDrive = Serial1.read();
     if ((fromDrive != '\r') && (fromDrive != '\n')) {
-      Serial.print("debug (from Drive)\t: received from Drive UART: ");
-      Serial.println(fromDrive);
+      Serial.print("debug (from Drive)\t: received from Drive UART: ");         //debug logs
+      Serial.println(fromDrive);                                                //debug logs
       if (fromDrive == 'd') {           //rover is done with last instruction
         driveWaiting = true;
         Serial.println("info (from Drive)\t: rover is ready for next instruction");
@@ -89,8 +89,6 @@ void receiveDataDriveUART() {
           readTravelled += fromDrive;
         } else if (readingAngle) {
           readAngle += fromDrive;
-        } else {
-          mqttClient.publish(mqttDebugTopic, "DriveUART: error (else)");
         }
       }
     } else if (fromDrive == '\r') {
@@ -172,6 +170,12 @@ void receiveDataVisionUART() {
         readDistance.trim();
         //add the obstacle (color:distance) to the list of detected obstacles
         obstacleList[readColor] = readDistance;
+
+        Serial.print("info (from Vision)\t: obstacle \'");
+        Serial.print(readColor);
+        Serial.print("\' has distance: ");
+        Serial.println(readDistance);
+
         //reset strings for next obstacle to be read
         readColor = "";
         readDistance = "";
@@ -189,13 +193,16 @@ void receiveDataVisionUART() {
 
 //Computes the coordinates of the obstacle that triggered the obstacle avoidance protocol, and sends them to Command
 void computeAndSendObstacleCoordinatesToCommand(String obstacleColor) {
+  //estimate the distance from the sensor to the obstacle
   long distanceToObstacle = lengthOfRover + (obstacleDetectionThreshold * 3 / 4);
+  //compute the coordinates of the obstacle based on the estimation
   long xObstacleCoordinate = xRoverCoordinate + ((distanceToObstacle) * sin(roverAngle * PI / 180L));
   long yObstacleCoordinate = yRoverCoordinate + ((distanceToObstacle) * cos(roverAngle * PI / 180L));
   String obstacleCoordinates = String(xObstacleCoordinate) + ":" + String(yObstacleCoordinate);
   Serial.print("info (internal)\t\t: coordinates of obstacle are: ");
   Serial.println(obstacleCoordinates);
   String mqttSendObstacle = obstacleColor + obstacleCoordinates;
+  //send the color of the obstacle and its coordinates to Command
   mqttClient.publish(mqttOutTopicObstacle, ArduinoStringToChar(mqttSendObstacle));
 }
 
@@ -208,9 +215,6 @@ void computeAndSendObstacleCoordinatesToCommand(String obstacleColor) {
 
 //Timers for scheduling of functions in loop() function
 unsigned long lastTimer = 0;   //5s loop
-
-//debug
-bool debugLogDoneOnce = false;
 
 
 void setup() {
@@ -250,7 +254,7 @@ void setup() {
   Serial.println();
   currentAvoidRoutine = avoidRoutine;
 
-  //debug
+  //debug log
   mqttClient.publish(mqttDebugTopic, "--- esp32 connected ---");
 }
 
@@ -275,12 +279,12 @@ void loop() {
       //mqttClient.publish(mqttOutTopicBattery, "100%"); //note: as connection is so physically established, we use abitrary data
     }
   */
-/*
+
   //Read incoming data from Vision (if any)
   receiveDataVisionUART();
+  
   //Check if we have an obstacle
   if (!obstacleList.empty()) {
-    obstaclesDetected = true;
     //iterate through all obstacles detected to see if one is in range
     bool oneBallClose = false;
     for (auto i = obstacleList.begin(); i != obstacleList.end(); i++) {
@@ -297,7 +301,7 @@ void loop() {
       obstacleColorToAvoid = "";
     }
 
-    //debug
+    //debug logs
     if (visionOverride == true) {
       Serial.print("OBSTACLE_AVOIDANCE");
       mqttClient.publish(mqttDebugTopic, "CLOSE");
@@ -306,25 +310,14 @@ void loop() {
       mqttClient.publish(mqttDebugTopic, "FAR");
     }
     Serial.println();
-
   } else {
-    obstaclesDetected = false;
     visionOverride = false;
     mqttClient.publish(mqttDebugTopic, "nothing detected");
   }
-*/
+
   //Read incoming data from Drive (if any)
   receiveDataDriveUART();
-
-  /*
-    //debug: one-time execution block a few seconds into the program to simulate a change in state of the other sub-modules flags
-    if ((currentTimer >= 10000) && (debugLogDoneOnce == false)) {
-      visionOverride = true;
-      mqttClient.publish(mqttDebugTopic, "debug flags");
-      Serial.println("debug (internal)\t: simulated flags updated");
-      debugLogDoneOnce = true;
-    }
-  */
+  
 
   //Handle instructions to give to Drive depending on Vision's input
   if ((visionOverride == false) && (playingRoutine == false)) {
@@ -351,8 +344,8 @@ void loop() {
 
       if (driveWaiting == false) {
         if (lastInstruction.command == "FW") {
-          Serial.println("info: Obstacle detected! (case: during forward instruction)");
-          mqttClient.publish(mqttDebugTopic, "Obstacle detected! (1)");
+          Serial.println("info: Obstacle detected! (case: during forward instruction)");        //debug logs
+          mqttClient.publish(mqttDebugTopic, "Obstacle detected! (1)");                         //debug logs
 
           //stop rover & ping Drive for information
           sendInstructionDriveUART(stopInstr);
@@ -394,8 +387,8 @@ void loop() {
       //note: this could happen if the rover turns and there is an obstacle next to it
       else if (driveWaiting && (!instructionQueue.empty())) {
         if (instructionQueue.front().command == "FW") {
-          Serial.println("info: Obstacle detected! (case: upon receiving forward instruction)");
-          mqttClient.publish(mqttDebugTopic, "Obstacle detected! (2)");
+          Serial.println("info: Obstacle detected! (case: upon receiving forward instruction)");    //debug logs
+          mqttClient.publish(mqttDebugTopic, "Obstacle detected! (2)");                             //debug logs
 
           //stop rover & ping Drive for information
           sendInstructionDriveUART(stopInstr);
@@ -421,7 +414,7 @@ void loop() {
           }
         } else {
           //as this not a forward instruction, the rover won't collide with obstacle, so just execute it
-          mqttClient.publish(mqttDebugTopic, "Obstacle detected! not FW");
+          mqttClient.publish(mqttDebugTopic, "Obstacle detected! not FW");    //debug logs
 
           //save the instruction to memory for future obstacle avoidance
           lastInstruction = instructionQueue.front();

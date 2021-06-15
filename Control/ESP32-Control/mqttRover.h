@@ -112,6 +112,7 @@ void reconnect() {
 
 // ----------- HELPER FUNCTIONS -----------
 
+
 //Converts an Arduino String to char*
 char* ArduinoStringToChar(String inputString) {
   if (inputString.length() != 0) {
