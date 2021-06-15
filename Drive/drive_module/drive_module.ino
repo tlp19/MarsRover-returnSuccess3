@@ -93,15 +93,13 @@ int pwmr = 5;                     //pin to control right wheel speed using pwm
 int pwml = 9;                     //pin to control left wheel speed using pwm
 
 
-//***************** MOTOR **************************//
+//***************** MOTOR Commands for communication **************************//
 char command;
 long d;
 
-const float pi = 3.14159265359;
-
 bool UARTdataSent = true;
 
-// *************** coordinates *********************//
+// *************** Initializing variables foordinates *********************//
 long L;
 long angle;
 long theta = 0;
@@ -371,15 +369,15 @@ void loop() {
   long val = mousecam_read_reg(ADNS3080_PIXEL_SUM);
   MD md;
   mousecam_read_motion(&md);
-  /*for (long i = 0; i < md.squal / 4; i++)
+  for (long i = 0; i < md.squal / 4; i++)
     Serial.print('*');
-    Serial.print(' ');
-    Serial.print((val * 100) / 351);
-    Serial.print(' ');
-    Serial.print(md.shutter); Serial.print(" (");
-    Serial.print((long)md.dx); Serial.print(',');
-    Serial.print((long)md.dy); Serial.println(')');
-  */
+  Serial.print(' ');
+  Serial.print((val * 100) / 351);
+  Serial.print(' ');
+  Serial.print(md.shutter); Serial.print(" (");
+  Serial.print((long)md.dx); Serial.print(',');
+  Serial.print((long)md.dy); Serial.println(')');
+
   //debug
 
 
@@ -396,12 +394,11 @@ void loop() {
   total_x = 10 * total_x1 / 157; //Conversion from counts per inch to mm (400 counts per inch)
   total_y = 10 * total_y1 / 157; //Conversion from counts per inch to mm (400 counts per inch)
 
-  /*
-    Serial.print('\n');
-    Serial.println("Distance_x = " + String(total_x));
-    Serial.println("Distance_y = " + String(total_y));
-    Serial.print('\n');
-  */
+
+  Serial.print('\n');
+  Serial.println("Distance_x = " + String(total_x));
+  Serial.println("Distance_y = " + String(total_y));
+  Serial.print('\n');
   //delay(100);
 
 #endif
@@ -499,8 +496,6 @@ void receiveData() {
     receivedChars.trim();
     d = receivedChars.toInt();
   }
-  // Serial.println("command = " + String(command));
-  // Serial.println("d = " + String(d));
 }
 
 //************************** Direction Control ***************************//
@@ -509,10 +504,12 @@ void directionControl(char command, long d_a) {
 
   // moving forwards
   if (command == 'f') {
+    // initialize speed when it moves foward
     digitalWrite(pwmr, HIGH);
     digitalWrite(pwml, HIGH);
     int y = d_a;
-    if (y - abs(total_y) < 2) {
+    // compare sensor's y-coordinates with the desired distance
+    if (y - abs(total_y) < 2) { //use absolute value to compute the difference between to positive values
       stopRover();
       L = abs(total_y);
       sendCoordinates();
@@ -523,21 +520,25 @@ void directionControl(char command, long d_a) {
       distance_x = 0;
       distance_y = 0;
     } else {
+      // if y-coordinates do not match with the desired distance, then move foward
       DIRRstate = LOW;
       DIRLstate = LOW;
       UARTdataSent = false;
     }
   }
+
   // rotating clockwise
   else if (command == 'r') {
     digitalWrite(pwmr, HIGH);
     digitalWrite(pwml, HIGH);
-    long a = d_a + ((d_a * (float)20) / (float)360);
-    if (a - ((abs(total_x) * (float)180) / ((float)130 * pi)) < 1) {
+    long a = d_a + ((d_a * (float)20) / (float)360); // add offset to compensate for sensor innacuracy
+    // compare the computed angle from sensor's x-coordinates with the desired angle
+    if (a - ((abs(total_x) * (float)180) / ((float)130 * PI)) < 1) {
       stopRover();
       if (!UARTdataSent) {
-        angle = (((abs(total_x) * (float)180) / ((float)130 * pi)) - ((d_a * (float)20) / (float)360) + (float)1);
-        theta += angle;
+        // send back to control the angle: need to remove the offset from the measured angle 
+        angle = (((abs(total_x) * (float)180) / ((float)130 * PI)) - ((d_a * (float)20) / (float)360) + (float)1);
+        theta += angle; //the angle should be added to the previous angle in order to compute the current coordinates
         Serial1.print('a');
         Serial1.println(String(theta));
         Serial1.println('d');
@@ -550,6 +551,7 @@ void directionControl(char command, long d_a) {
       distance_x = 0;
       distance_y = 0;
     } else {
+      // if the desired angle does not match computed angle, then move turn clockwise
       DIRRstate = HIGH;
       DIRLstate = LOW;
       UARTdataSent = false;
@@ -559,12 +561,14 @@ void directionControl(char command, long d_a) {
   else if (command == 'l') {
     digitalWrite(pwmr, HIGH);
     digitalWrite(pwml, HIGH);
-    long a = d_a + ((d_a * (float)20) / (float)360);
-    if (a - ((abs(total_x) * (float)180) / ((float)130 * pi)) < 1) {
+    long a = d_a + ((d_a * (float)20) / (float)360); // add offset to compensate for sensor innacuracy
+    // compare the computed angle from sensor's x-coordinates with the desired angle
+    if (a - ((abs(total_x) * (float)180) / ((float)130 * PI)) < 1) {
       stopRover();
       if (!UARTdataSent) {
-        angle = -(((abs(total_x) * (float)180) / ((float)130 * pi)) - ((d_a * (float)20) / (float)360) + (float)1 );
-        theta += angle;
+        // send back to control the angle: need to remove the offset from the measured angle
+        angle = -(((abs(total_x) * (float)180) / ((float)130 * PI)) - ((d_a * (float)20) / (float)360) + (float)1 );  // angle is negative beacause it is counterclockwise
+        theta += angle; //the angle should be added to the previous angle in order to compute the current coordinates
         Serial1.print('a');
         Serial1.println(String(theta));
         Serial1.println('d');
@@ -577,6 +581,7 @@ void directionControl(char command, long d_a) {
       distance_x = 0;
       distance_y = 0;
     } else {
+      // if the desired angle does not match computed angle, then move turn counterclockwise
       DIRRstate = LOW;
       DIRLstate = HIGH;
       UARTdataSent = false;
@@ -584,13 +589,14 @@ void directionControl(char command, long d_a) {
   }
   //moving backwards
   else if (command == 'b') {
+    // initialize speed when it moves backwards
     digitalWrite(pwmr, HIGH);
     digitalWrite(pwml, HIGH);
     int y = d_a;
+    // compare sensor's y-coordinates with the desired distance
     if (y - abs(total_y) < 2) {
       stopRover();
       L = -(abs(total_y));
-      Serial.println("L1: " + String(L));
       sendCoordinates();
       command = '\0';
       d = 0;
@@ -599,6 +605,7 @@ void directionControl(char command, long d_a) {
       distance_x = 0;
       distance_y = 0;
     } else {
+      // if y-coordinates do not match with the desired distance, then move backwards
       DIRRstate = HIGH;
       DIRLstate = HIGH;
       UARTdataSent = false;
@@ -606,6 +613,7 @@ void directionControl(char command, long d_a) {
   }
 
   else {
+    // if no command is received then coordinates of the sensor should be reset and rover stoped
     stopRover();
     total_x1 = 0;
     total_y1 = 0;
@@ -617,7 +625,6 @@ void directionControl(char command, long d_a) {
   digitalWrite(DIRL, DIRLstate);
 }
 
-// send done
 
 //************************** Stop Rover ***************************//
 
@@ -647,12 +654,12 @@ void sendCoordinates() {
   if (!UARTdataSent) {
 
     // theta += angle;                      // increment theta with angle
-    Serial.println("L2: " + String(L));
+    Serial.println("L: " + String(L));
     Serial.println("angle: " + String(angle));
     Serial.println("theta: " + String(theta));
 
-    long b_x = L * sin(theta * pi / 180L);  // find last x-point
-    long b_y = L * cos(theta * pi / 180L);  // find last y-point
+    long b_x = L * sin(theta * PI / 180L);  // find last x-point
+    long b_y = L * cos(theta * PI / 180L);  // find last y-point
 
     last_x += b_x;                  // find x-coordinates
     last_y += b_y;                  // find y-coordinates
@@ -673,13 +680,13 @@ void sendCoordinates() {
 void sendCoordinatesOnCommand() {
   if (!UARTdataSent) {
 
-    // theta += angle;                      // increment theta with angle
+    // theta += angle;                                // increment theta with angle
     Serial.println("L2: " + String(L));
     Serial.println("angle: " + String(angle));
     Serial.println("theta: " + String(theta));
 
-    long b_x = L * sin(theta * pi / 180L);  // find last x-point
-    long b_y = L * cos(theta * pi / 180L);  // find last y-point
+    long b_x = L * sin(theta * PI / 180L);  // find last x-point
+    long b_y = L * cos(theta * PI / 180L);  // find last y-point
 
     last_x += b_x;                  // find x-coordinates
     last_y += b_y;                  // find y-coordinates

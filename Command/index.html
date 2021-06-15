@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <!-- Icon of rover/robot for the webserver -->
+    <link rel="icon" href="%PUBLIC_URL%/icon.png"/>
+
+    <!-- Icons from fontawesom -->
+    <script src="https://kit.fontawesome.com/b99c39e948.js" crossorigin="anonymous"></script>
+
+    <!-- Script for popover on buttons (make the graphic bigger on click) -->
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+
+    <!-- Plotly.js : library for the graphic used to plot information send/recieved -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+
+    
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link href="https://unpkg.com/utilities-css" rel="stylesheet">
+
+    <!-- We put all the styling that we have in another file: style.css -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inconsolata">
+  
+    <!-- Library for MQTT data transmission -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+
+    <!-- Library for the Progress Bar inittialisation -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css" integrity="sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B" crossorigin="anonymous">
+
+  </head>
+
+
+
+  <body><s2>
+
+     <!-- Graph zoomed as a pop-up (popover) window  -->
+     <div id="myModal" style="border:double grey; display:none;" class="modal">
+    
+      <!-- The Close Button -->
+      <span class="close far fa-window-close" style= "font-size: 40px; background-color: white;"></span>
+
+      <!-- Windows content -->
+      <div class="modal-content" style="border: double grey; overflow: auto;">
+        <!-- The graph -->
+        <div id="graphDiv1"></div>
+      </div>
+
+    </div>
+
+  <!-- Structure of the web-server being setup: divide the page in order to organise it better -->
+
+  <!-- Left section is dedicated to the command center, interface offered to the client to send data to the Rover -->
+    <div class="split left">
+
+  <!-- Command pannel is divided in three pages, one for every "Game-Mode", below we set up the menu that allow us to move from one page to another -->
+      <div class="w3-container" id="command" style="padding-bottom:32px;">
+        <div class="w3-content" style="max-width:1500px; border: 1px solid black;">        
+          <div class="w3-row w3-center w3-card w3-padding">
+            <a href="javascript:void(0)" onclick="openMenu(event, 'Fixed_Route');" id="myLink">
+              <div class="w3-col s4 tablink">Fixed Routing</div>
+            </a>
+            <a href="javascript:void(0)" onclick="openMenu(event, 'Live_Route');">
+              <div class="w3-col s4 tablink">Live Routing</div>
+            </a>
+            <a href="javascript:void(0)" onclick="openMenu(event, 'Coordinates_Route');">
+              <div class="w3-col s4 tablink">Coordinates Routing</div>
+            </a>
+          </div>
+
+  <!-- First mode being coded, Fixed routing corresponding to Command of type: Direction + Distance/Angle -->
+          <div id="Fixed_Route" class="w3-container menu w3-padding-24 w3-card">
+
+  <!-- First section pof every mode will be dedicated to a summary of the connection server/host and the topic where the information is sent -->
+  <!-- However, this page is a bit different from the others as we also print on here the data recieved from the Battery section of the project -->       
+            <noscript>You need to enable JavaScript to run this app.</noscript>
+            <div class="w3-panel w3-leftbar">
+              <b class="w3-left">IP Address:</b><br>
+              <b><h6><label class="w3-right" for="file"><u>Battery Level: </u><span id="battery_val"></span> (%)</label></h6></b>                   <!-- Battery Level displayed both as number and as a progress bar -->
+              <p><input id="host" type="text" name="host" value="3.8.124.71"></p>
+              <progress class="w3-right progress-default" id="battery" value= "" max="100"></progress><br>
+              <b>Port:</b><br>
+              <b><h6><label class="w3-right" for="file"><u>Battery State of Health: </u><span id="battery_health"></span> (%)</label></h6></b>      <!-- Battery State of Health displayed both as number and as a progress bar, --> 
+              <p><input id="port" type="text" name="port" value="8083"></p>                                                                         <!-- this value is only updated once the battery of the rover reached zero -->
+              <progress class="w3-right progress-default" id="battery_heal" value= "" max="100"></progress><br>
+              <b>Topic:</b><br>
+              <b><h6><label class="w3-right" for="file"><u>Rover Range: </u><span id="rover_range"></span> (metre)</label></h6></b>                 <!-- Rover Range is calculated thanks to a function coded at the end of the script "roverRangeCalc()" -->           
+              <p><input id="topic" type="text" name="topic" value="command"></p>
+            </div>
+
+
+            <br>
+  <!-- Next section is dedicated to the first command mode input, allows you to choose a trio of direction, distance/angle and speed-->
+            <p>Enter the commands for the Rover to execute.</p>
+            <p><span class="w3-tag">FYI!</span> The Mars Rover requires a direction and a distance/angle to follow, once both inputs filled press the button: <strong>Send Command to Rover</strong> </p>
+            <p><strong>Directions: </strong> FW: forward  |  BW: backward  |  CL: clockwise  |  CC: Counter-clockwise.</p>
+            <br>
+            <p><input class="w3-input w3-padding-16 w3-border" id="direction" value="" type="text" placeholder='Direction: FW / BW / CL / CC' required name="Direction"></p>
+            <input class="w3-input w3-padding-16 w3-border" id="distance" value="" type="number" placeholder="Distance or Angle" required name="Distance">
+            <br>
+
+  <!-- This script allows us to use a range to select the value of the speed we want the rover to execute the instruction at -->
+  <!-- oninput the object "speed_value" will be uppdated with the value of the object "range" fluctuating between 1 and 10  -->
+            <input type="range" min="1" max="10" value="1" step="1" class="slider" id="range">
+            <b><i>Speed control: </i></b> <span id="speed_value"></span>/10</p>
+            
+            <script>
+            var slider = document.getElementById("range");
+            var output = document.getElementById("speed_value");
+            output.innerHTML = slider.value;
+            
+            slider.oninput = function() {
+              output.innerHTML = this.value;
+            }
+            </script>
+            
+  <!-- Finally, to finish the page we have 3 buttons that allow us to set up a connection (startConnect), -->
+  <!-- break it (startDisconnect) and finally send messages on the broker -->
+
+  <!-- The second button is executing two functions when clicked, the first one to send the commands and -->
+  <!-- the second one to convert the commands to coordinates and be able to track the path of the Rover -->
+            <br>
+            <input id= "onConnect" class="w3-button w3-black" type="button" onclick="startConnect()" value="Connect to Rover">
+            <input class="w3-right w3-button w3-black" type="button" onclick="send_mqtt_msg(); add_coordinates()" value="Send Command to Rover"><br><br>
+            <input class="w3-button w3-black" type="button" onclick="startDisconnect()" value='Disconnect Rover'>
+            <br>
+        </div>
+        
+
+
+  <!-- This marks the beginning of a new section in how website dedicated to a new Game-Mode: Live routing-->      
+        <div id="Live_Route" class="w3-container menu w3-padding-24 w3-card">
+
+          <noscript>You need to enable JavaScript to run this app.</noscript>
+          <div class="w3-panel w3-leftbar">
+            <b>IP Address:</b><br>
+            <p><input id="host" type="text" name="host" value="3.8.124.71"></p><br>
+            <b>Port:</b>
+            <p><input id="port" type="text" name="port" value="8083"></p><br>
+            <b>Topic:</b>
+            <p><input id="topic" type="text" name="topic" value="command"></p>
+          </div>
+
+          <br>
+
+          <div>
+            <p>Enter the commands for the Rover to execute in <strong>real time</strong>.</p>
+            <p>The Mars Rover will keep on executing the instruction selected until either the Stop button is pressed or another command is inputted.</p>
+            <p><span class="w3-tag">FYI!</span> The Turn Buttons are set constant on <strong>90 degree rotations</strong> to attenuate the delay issue.</p>
+            <p><strong>Speed levels: </strong> walking: slow (1) | cycling: medium (5)  driving: fast (10)</p>
+            <br>
+            <b>Live Commands to Rover:</b><br><br>
+
+  <!-- In order to make it more realistic, we decided to isolate the controller from the rest of the page, done by the following line that sets up a light-grey box -->          
+            <div class="w3-light-grey" style="border:double grey; overflow:auto">
+              <br>
+  <!-- Having two sets of controls, direction and speed, we decided to split our box in two parts: right and left -->            
+              <div class="w3-left" style="text-align:center;width:400px;">
+
+  <!-- The right part of the box is dedicated to Directions: Forward | Backward | Clockwise | Counter-clockwise | Stop -->
+  <!-- We used a web site: fontawesome.com to find the buttons that we used to make it more real, pasted in the class section of each buttons -->
+  <!-- Finally each buttons triggers two functions that work hand in hand to send live commands to the Rover -->
+                <button onclick= "setup(); send_mqtt_msg2()" class="far fa-arrow-alt-circle-up" style="font-size: 48px; background: whitesmoke; border: none;"></button><br><br>
+                <button onclick= "setleft(); send_mqtt_msg2()" class="far fa-arrow-alt-circle-left" style="font-size: 48px; background: whitesmoke; border: none;"></button>
+                <button onclick= "setstop(); send_mqtt_msg2()" class="far fa-stop-circle" style="font-size: 48px; background: whitesmoke; border: none;"></button>
+                <button onclick= "setright(); send_mqtt_msg2()" class="far fa-arrow-alt-circle-right" style="font-size: 48px; background: whitesmoke; border: none;"></button>
+                <br><br>
+                <button onclick= "setbottom(); send_mqtt_msg2()" class="far fa-arrow-alt-circle-down" style="font-size: 48px; background: whitesmoke; border: none;"></button><br><br>
+                
+              </div>
+  <!-- Speed division of the Live command -->
+              <div class="w3-right " style="text-align:center;width:350px;">
+                <br><br>
+  <!-- The togglebuttons was created in order to be more expressive to the user, and avoid that he gets confused with which button he previously selected -->
+  <!-- The button selected will appear hightlightened in blue -->              
+                <h6><label><b><i>Speed control: </i></b></label></h6>
+                <button id="slow" onclick= "setslow(); togglebuttons()" class="fas fas-right fa-walking" style="font-size: 48px; background: white; border: double blue"></button><span style="padding-right: 10px;"></span>
+                <button id="medium" onclick= "setmedium(); togglebuttons()" class="fas fas-right fa-bicycle" style="font-size: 48px; background: white; border: double;"></button><span style="padding-right: 10px;"></span>
+                <button id="fast" onclick= "setfast(); togglebuttons()" class="fas fas-right fa-shipping-fast" style="font-size: 48px; background: white; border: double;"></button>
+                
+              </div>
+            </div>
+
+
+
+            <br>
+            
+          </div>
+        </div>
+
+
+  <!-- Last section of our control pannel is dedicated to: Commands using coordinates-->
+        <div id="Coordinates_Route" class="w3-container menu w3-padding-24 w3-card">
+
+          <noscript>You need to enable JavaScript to run this app.</noscript>
+          <div class="w3-panel w3-leftbar">
+            <b>IP Address:</b><br>
+            <p><input id="host" type="text" name="host" value="3.8.124.71"></p><br>
+            <b>Port:</b>
+            <p><input id="port" type="text" name="port" value="8083"></p><br>
+            <b>Topic:</b>
+            <p><input id="topic" type="text" name="topic" value="command"></p>
+          </div>
+
+          <br>
+
+          <div>
+            <p>Enter the commands as <strong>Coordinates</strong> for the Rover to execute.</p>
+            <p>The coordinates will be transmitted to the <strong>Rover</strong> which will convert them to simple commands. The coordinates sent will, moreover, be added to the graph as <strong>Ideal path</strong>, and be available to compare with the Rover <strong>Real path</strong> (recieved after execution).</p>
+            <p>The <strong>Speed</strong> at which the rover will move can also be scalled using the range bellow (level from 1 to 10, slow to fast).</p>
+            <p><span class="w3-tag">FYI!</span> When the rover encounters an <strong>obstacle</strong> it will also be added to the graph along with its color.</p>
+            <br>
+            <b>Coordinates of Rover:</b>
+
+  <!-- We need to select a coordinate to which the rover needs to move by filling the inputted boxes initialized bellow -->          
+            <input class="w3-input w3-padding-16 w3-border" id="x_axis" value="" type="number" placeholder='x-axis' required name="x-axis">
+            <input class="w3-input w3-padding-16 w3-border" id="y_axis" value="" type="number" placeholder="y-axis" required name="y-axis">
+
+            <br>
+  <!-- Speed control: range explained in section 1, Fixed Routing -->    
+            <input type="range" min="1" max="10" value="1" step="1" class="slider" id="range2">
+            <b><i>Speed control: </i></b> <span id="speed_value2"></span>/10</p>
+          
+            <script>
+            var slider2 = document.getElementById("range2");
+            var output2 = document.getElementById("speed_value2");
+            output2.innerHTML = slider2.value;
+            
+            slider2.oninput = function() {
+              output2.innerHTML = this.value;
+            }
+            </script>
+
+  <!-- variables to store the Rover's actual path (see obstacle avoidance) -->
+            <input type="hidden" class="w3-input" id="x_axis_real" value="0" type="number" placeholder='x-axis-real' required name="x-axis-real">
+            <input type="hidden" class="w3-input" id="y_axis_real" value="0" type="number" placeholder="y-axis-real" required name="y-axis-real">
+        
+  <!-- variables to store the coordinates of the Obstacles -->
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="x_axis_obs_pink" value="" type="text" placeholder='x-axis-obs-pink' required name="x-axis-obs-pink">
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="y_axis_obs_pink" value="" type="text" placeholder="y-axis-obs-pink" required name="y-axis-obs-pink">
+
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="x_axis_obs_orange" value="" type="text" placeholder='x-axis-obs-orange' required name="x-axis-obs-orange">
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="y_axis_obs_orange" value="" type="text" placeholder="y-axis-obs-orange" required name="y-axis-obs-orange">
+
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="x_axis_obs_green" value="" type="text" placeholder='x-axis-obs-green' required name="x-axis-obs-green">
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="y_axis_obs_green" value="" type="text" placeholder="y-axis-obs-green" required name="y-axis-obs-green">
+
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="x_axis_obs_blue" value="" type="text" placeholder='x-axis-obs-blue' required name="x-axis-obs-blue">
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="y_axis_obs_blue" value="" type="text" placeholder="y-axis-obs-blue" required name="y-axis-obs-blue">
+
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="x_axis_obs_grey" value="" type="text" placeholder='x-axis-obs-grey' required name="x-axis-obs-grey">
+            <input type="hidden" class="w3-input w3-padding-16 w3-border" id="y_axis_obs_grey" value="" type="text" placeholder="y-axis-obs-grey" required name="y-axis-obs-grey">
+
+            <br>
+  <!-- When clicked the button will send data to the rover, add the Ideal path that the rover should follow ("sentData") and compute -->
+  <!-- the next angle to make it compatible with Fixed Routing so that we can use both at the same time ("computeAngle") -->          
+            <input class="w3-button w3-black" id="sendData" type="button" onclick="sentData(); computeAngle()" value="Add coordinates">
+          </div>
+        </div>
+
+        </div>
+      </div> 
+    </div>
+  
+  <!-- Finally, we have now finished all three sections of the Left side of our website, thus we now movre on to the right hand side -->  
+    <div class="split right">
+  
+  <!-- We decided to split the right part of the page in two pieces of different height, the biggest one located at the top will contain -->
+  <!--   the graphis on which all the data will be added -->    
+        <div class="splitheight top">
+          <div class="centered w3-padding-16">
+  <!-- Reference to a Graphic being added to the page -->          
+            <div id="graphDiv"></div>
+          </div>
+        </div>
+  <!-- While the lower part of the right hand page will contain a text zone used to give feedback on the information being sent to the -->
+  <!-- control section and the data being recieved from all parteners -->   
+        <br>
+        <div class="splitheight bottom">
+          <div id="messages">
+        </div>
+    </div>
+
+  
+  <!-- The section on the frontend of the server is finished, below you will find the function being used to communicate, parse and compute data -->  
+  <var id="buffer" value="0">
+
+  <script>
+  
+
+  //Function to establish the connection with the broker using MQTT functions
+    function startConnect() {
+        // Generate a random client ID
+        clientID = "clientID-" + parseInt(Math.random() * 100);
+
+        // Fetch the hostname/IP address and port number from the form
+        host = document.getElementById("host").value;
+        port = document.getElementById("port").value;
+        topic = document.getElementById("topic").value;
+
+        // Print output for the user in the messages div
+        document.getElementById("messages").innerHTML += '<span>Connecting to: ' + host + ' on port: ' + 
+            port + ' (subscribed to: ' + "status | rover | obstacle" + ') </span><br/>';
+        
+        // Initialize new Paho client connection
+        client = new Paho.MQTT.Client(host, Number(port), clientID);
+
+        // Set callback handlers
+        client.onMessageArrived = onMessageArrived;
+
+        // Connect the client, if successful, call onConnect function
+        client.connect({ 
+            onSuccess: onConnect,
+        });
+
+        updateScroll(); // Scroll to bottom of window
+    }
+
+    
+  // Called once the client is connected, in order to establish the connection with the desired topics
+    function onConnect() {
+        // Fetch the MQTT topic from the form
+        topic = document.getElementById("topic").value;
+
+        client.subscribe("status");                         // recieve data from the Battery
+        client.subscribe("rover");                          // recieves data from the Rover, namely its coordinates at the end of every instructions
+        client.subscribe("obstacle");                       // recieves data from the vision section in order to plot on the graphic both the distance of the obstacles and its colour
+
+        updateScroll(); // Scroll to bottom of window 
+    }
+
+  // Function called for sending data during the Fixed Routing Command-Mode (using the MQTT library)
+    function send_mqtt_msg() {
+      // Sends an MQTT message
+       host = "3.8.124.71";  
+       port =  8083;  
+       clientID = "clientID-" + parseInt(Math.random() * 100);
+
+      client = new Paho.MQTT.Client(host, port, clientID);
+      client.connect({onSuccess:onConnect2});
+
+      updateScroll(); // Scroll to bottom of window
+    }
+
+  // Wait for the website to connect to the website before sending any messages that would be lost
+    function onConnect2() {
+
+        var topic = "command";  
+        var msg = "SP" + range.value;
+        var msg1 = direction.value + distance.value;
+  
+  // Sends a message on the command topic
+  // Checks that we are in either forward or backward instruction to send anything related to the speed      
+        if(direction.value == ("FW"||"BW")){
+          message = new Paho.MQTT.Message(msg);
+          message.destinationName = topic;
+          client.send(message);
+          document.getElementById("messages").innerHTML += '<span>topic: ' + topic + ' = ' + msg + '  sent' + '</span><br/>';
+        }
+  // Checks that a direction has be inputted before sending any instructions
+        if(direction.value != ""){
+          message1 = new Paho.MQTT.Message(msg1);
+          message1.destinationName = topic;
+          client.send(message1);
+          document.getElementById("messages").innerHTML += '<span>topic: ' + topic + ' = ' + msg1 + '  sent' + '</span><br/>';
+
+          updateScroll(); // Scroll to bottom of window
+  // If none of those requirements are valid: do nothing        
+        }else{ }
+    }
+  
+
+    // Called when the disconnection button is pressed, it breaks the connection with the broker
+    function startDisconnect() {
+        client.disconnect();
+        document.getElementById("messages").innerHTML += '<span>Disconnected</span><br/>';
+        updateScroll(); // Scroll to bottom of window
+    }
+
+    // Tells the "messages" division to auto-scroll down so that the messages stay visible
+    function updateScroll() {
+        var element = document.getElementById("messages");
+        element.scrollTop = element.scrollHeight;
+    }
+
+
+
+  // Whenever a message on one of our subscribed topics is detected: we will parse it and extract its content into varibales spread across the code 
+    function onMessageArrived(message) {
+
+        console.log("onMessageArrived: " + message.payloadString);
+  // As the battery is sending us updates on many variables at a high frequency, we decided to not show it to the user in the messages division 
+  // message.destinationName is the topic registered while message.payloadString is the message captured      
+        if(message.destinationName != "status"){
+          document.getElementById("messages").innerHTML += '<span>Topic: ' + message.destinationName + '  | ' + message.payloadString + '</span><br/>';
+        }
+        updateScroll(); // Scroll to bottom of window
+
+        var msginput = message.payloadString;
+
+  // As some sections will send multiple information on the same topic we need to be able to parse them and get the values out without losing some
+  // The search function will count the number of character before the first occurence of a symbol typed inside the parenthesis
+  
+  // The Battery side of the project is sending me two information as one string: "battery_health : battery_level" explaining with I need to parse it
+        if(message.destinationName == "status"){
+          var n = msginput.search(/:/i);
+          document.getElementById("battery_heal").value = msginput.substr(0, n);
+          document.getElementById("battery_heal").className = getBatteryClasses("battery_heal");
+
+          document.getElementById("battery_health").innerHTML = msginput.substr(0, n);
+          document.getElementById("battery").value = msginput.substr(n+1, 6);
+          document.getElementById("battery").className = getBatteryClasses("battery");
+
+          document.getElementById("battery_val").innerHTML = msginput.substr(n+1, 6);
+
+  // We want to compute the value of the range evry time new values of health and level are sent over, thus we will ren the function roverRangeCalc
+  // and print the value outputted
+          document.getElementById("rover_range").innerHTML = roverRangeCalc();
+  
+  // The obstacle topic consists of a letter describing the colour of the ball obstacle, followed by two sets of coordinates: of the form: 
+  // "Letter for Colour + x_axis_obs : y_axis_obs"        
+        } else if(message.destinationName == "obstacle"){
+          
+          var type = msginput.substr(0, 1);
+
+          if(type == "P"){
+
+            var n = msginput.search(/:/i);
+            document.getElementById("x_axis_obs_pink").value = msginput.substr(1, n-1);
+            document.getElementById("y_axis_obs_pink").value = msginput.substr(n+1, 15);
+            sentData2();  //add obstacles automatically on graph
+
+          }else if(type == 'O'){
+
+            var n = msginput.search(/:/i);
+            document.getElementById("x_axis_obs_orange").value = msginput.substr(1, n-1);
+            document.getElementById("y_axis_obs_orange").value = msginput.substr(n+1, 15);
+            sentData2();  //add obstacles automatically on graph
+
+          }else if(type == 'G'){
+
+            var n = msginput.search(/:/i);
+            document.getElementById("x_axis_obs_green").value = msginput.substr(1, n-1);
+            document.getElementById("y_axis_obs_green").value = msginput.substr(n+1, 15);
+            sentData2();  //add obstacles automatically on graph
+
+          }else if(type == 'B'){
+
+            var n = msginput.search(/:/i);
+            document.getElementById("x_axis_obs_blue").value = msginput.substr(1, n-1);
+            document.getElementById("y_axis_obs_blue").value = msginput.substr(n+1, 15);
+            sentData2();  //add obstacles automatically on graph
+
+          }else if(type == 'A'){
+
+            var n = msginput.search(/:/i);
+            document.getElementById("x_axis_obs_grey").value = msginput.substr(1, n-1);
+            document.getElementById("y_axis_obs_grey").value = msginput.substr(n+1, 15);
+            sentData2();  //add obstacles automatically on graph
+          }
+  // Finally the Rover topic only sends us the coordinate of the rover after the end of the execution of one instruction, simple parsing with search
+        }else if(message.destinationName == "rover"){
+          var n = msginput.search(/:/i);
+          document.getElementById("x_axis_real").value = msginput.substr(0, n);
+          document.getElementById("y_axis_real").value = msginput.substr(n+1, 15);
+          document.getElementById("buffer").value = 1;
+          sentData2();  //add obstacles automatically on graph
+        }
+    }
+
+
+  // Below you will find the script that describes the connections to the graphic and how all the different information are set on it
+
+  //varibales initialisation to store the values on the graph: array for trace simple variable for point
+
+      //Ideal trace of the Rover:
+      let value1 = [0];             // x_axis value
+      let value2 = [0];             // y_axis value
+
+      //Real trace of the Rover:
+      let value3 = [];              // x_axis_rover value
+      let value4 = [];              // y_axis_rover value
+
+      //Obstacles encountered by the Rover:
+      let value5;  let value7;  let value9;   let value11;  let value13;  
+      let value6;  let value8;  let value10;  let value12;  let value14;
+    //  Pink          Orange      Green         Blue            Grey
+
+
+  // Function to both send the data to the rover and also links to another function, sentData2 that places the coordinates on the graphic  
+      function sentData(){
+        // Send an MQTT message
+        host = document.getElementById("host").value;  
+        port =  8083;  
+        clientID = "clientID-" + parseInt(Math.random() * 100);
+
+        client = new Paho.MQTT.Client(host, port, clientID);
+        client.connect({onSuccess:onConnect3});
+
+        updateScroll(); // Scroll to bottom of window
+
+        sentData2();
+      }
+
+  // This function places the coordinates of the points on the graphic     
+      function sentData2() {
+
+        if(document.getElementById("buffer").value == 1){
+          value3.push(document.getElementById("x_axis_real").value);
+          value4.push(document.getElementById("y_axis_real").value);
+          document.getElementById("buffer").value = 0;
+        }else{
+          // plot update
+          value1.push(document.getElementById("x_axis").value);
+          value2.push(document.getElementById("y_axis").value);
+
+          value5 = (document.getElementById("x_axis_obs_pink").value);
+          value6 = (document.getElementById("y_axis_obs_pink").value);
+
+          value7 = (document.getElementById("x_axis_obs_orange").value);
+          value8 = (document.getElementById("y_axis_obs_orange").value);
+
+          value9 = (document.getElementById("x_axis_obs_green").value);
+          value10 = (document.getElementById("y_axis_obs_green").value);
+
+          value11 = (document.getElementById("x_axis_obs_blue").value);
+          value12 = (document.getElementById("y_axis_obs_blue").value);
+
+          value13 = (document.getElementById("x_axis_obs_grey").value);
+          value14 = (document.getElementById("y_axis_obs_grey").value);
+        }
+    
+        
+  // Trace showing the Ideal path that should follow the Rover if we were in a perfect world
+        var trace1 = {
+          x: value1,
+          y: value2,
+          mode: 'lines+markers',
+          opacity: 0.7,
+          marker: {
+            color: 'CornflowerBlue',
+            size: 8
+          },
+          name: 'Ideal Rover path',
+        };
+      
+  // Trace showing the path that the rover actually takes, allows us to see the difference as small as we could make it be
+        var trace2 = {
+          x: value3,
+          y: value4,
+          mode: 'lines+markers',
+          opacity: 0.7,
+          marker: {
+            color: 'purple',
+            size: 8
+          },
+          name: 'Real Rover path',
+        };
+
+  // Points showing the coordinates and the colour of the obstacles. Upon encouter, the point will be places on the graphic and will remain there until it is seen somewhere else
+        var obs_pink = {
+          x: [value5],
+          y: [value6],
+          mode: 'markers',
+          opacity: 1,
+          marker: {
+            color: 'DeepPink',
+            size: 10
+          },
+          name: 'Pink Obstacle',
+        };
+
+        var obs_orange = {
+          x: [value7],
+          y: [value8],
+          mode: 'markers',
+          opacity: 1,
+          marker: {
+            color: 'orange',
+            size: 10
+          },
+          name: 'Orange Obstacle',
+        };
+
+        var obs_green = {
+          x: [value9],
+          y: [value10],
+          mode: 'markers',
+          opacity: 1,
+          marker: {
+            color: 'green',
+            size: 10
+          },
+          name: 'Green Obstacle',
+        };
+
+        var obs_blue = {
+          x: [value11],
+          y: [value12],
+          mode: 'markers',
+          opacity: 1,
+          marker: {
+            color: 'blue',
+            size: 10
+          },
+          name: 'Blue Obstacle',
+        };
+
+        var obs_grey = {
+          x: [value13],
+          y: [value14],
+          mode: 'markers',
+          opacity: 1,
+          marker: {
+            color: 'grey',
+            size: 10
+          },
+          name: 'Grey Obstacle',
+        };
+  
+  // Tell the generator to create the graphic taking into account all the data      
+        data = [trace1, trace2, obs_pink, obs_orange, obs_green, obs_blue, obs_grey];
+  
+  // We did everything in two sets after this point as we wanted to show the graph at two different places on the website (popover window)
+  // which wasn't available due to location conflict thus we just duplicated the graphic, graphDiv: small version while graphDiv1: is the
+  // popover window version     
+
+  //set the range of the axes to have a relevant map of the rover's movement.      
+        var layout = {
+          title: '<b><i> Rover Coordinates (Mm) </i></b>',
+          xaxis: {range: [-1000, 1000]},
+          yaxis: {range: [-1000, 1000]},
+          width: 830,
+          height: 700,
+        };
+
+        var layout1 = {
+          title: '<b><i> Rover Coordinates (Mm) </i></b>',
+          xaxis: {range: [-1000, 1000]}, 
+          yaxis: {range: [-1000, 1000]},
+          width: 1050,
+          height: 920,
+        };
+    
+        var update = {
+          opacity: 0.5,
+            marker: {
+              size: 8,
+          }
+        }
+
+  // Small version shown all the time except during popover:
+        Plotly.newPlot(graphDiv, data, layout);
+    
+        Plotly.restyle(graphDiv, 0);
+        
+        var update2 = {
+            'opacity': 1,
+            'marker.color': 'purple'
+        };
+        Plotly.restyle(graphDiv, 2);
+      
+  // Popover window version:
+        Plotly.newPlot(graphDiv1, data, layout1);
+      
+        Plotly.restyle(graphDiv1, 0);
+          
+        Plotly.restyle(graphDiv1, 2);
+      }
+      
+
+  // This function is used to send the coordinates to the Rover as a message of the form: "CO" + x_axis : y_axis
+  // FYI: all the data sent as commands is sent under the topic "command" and will be parsed in the following section (Control)
+
+      function onConnect3() {
+        direction.name = document.getElementById("direction").name;
+        var topic = "command";
+  // Speed retrieved from the range slider located in the Game-Mode coordinates routing        
+        var msg = "SP" + range2.value;
+        var msg1 = "CO" + x_axis.value + ":" + y_axis.value; 
+
+        message = new Paho.MQTT.Message(msg);
+        message1 = new Paho.MQTT.Message(msg1);
+        message.destinationName = topic;
+        message1.destinationName = topic;
+  
+  // In order to make the graph appear at the begining we must use a automatic clic at first, thus this if else statement
+  // allows us to avoid sending bad data on the channel
+  // If nothing was inputted then nothing is sent
+        if(value1 != '0,' && value2 != '0,' && value3 != '0,' && value4 != '0,'){
+          client.send(message);
+          client.send(message1);
+          document.getElementById("messages").innerHTML += '<span>topic: ' + topic + ' = ' + msg + '  sent' + '</span><br/>';
+          document.getElementById("messages").innerHTML += '<span>topic: ' + topic + ' = ' + msg1 + '  sent' + '</span><br/>';
+          updateScroll(); // Scroll to bottom of window
+        }else{
+          value1.push(0);
+          value2.push(0);
+          value3.push(0);
+          value4.push(0);
+        }
+      }
+
+  // This next section is dedicated to the application of a switching mode: allow the user to switch whenever he desires
+  // between Fixed and Coordinates routing
+
+  //To do so we need to updates the ideal path of the Rover on the graphic by converting litteral instructions into coordinates, then added onto the graphic.
+  // But also by setting a connection between the angles the next instructions need to use
+
+  //variables initialisation for add_coordinates function:
+      var L;
+      var theta = 0;
+      let last_x = 0;
+      let last_y = 0;
+      const pi = 3.14159265359;
+
+
+      function add_coordinates(){
+
+        last_x = value1[value1.length -1];
+        last_y = value2[value2.length - 1];
+
+        var instr = document.getElementById("direction").value;
+
+        if(instr == "FW"){
+          L = document.getElementById("distance").value;
+        } else if(instr == "BW"){
+          L = -(document.getElementById("distance").value);
+        } else if(instr == "CL"){
+          L = 0;
+  // Update the angle for the next instruction so that its stored and used for the next clockwise or Counter-clockwise   
+          theta = theta -(- document.getElementById("distance").value);
+        } else if(instr == "CC"){
+          L = 0;
+          theta = theta - document.getElementById("distance").value;
+        }
+  
+  // Those functions allow us to compute the coordinates by using Thales theorem      
+        if(instr == "FW" || instr == "BW"){
+
+          var b_x = L * Math.sin(theta*pi/(180));      // find last x-point
+          var b_y = L * Math.cos(theta*pi/(180));      // find last y-point
+
+  // We use the [-= -] to do a [+=] as somehow this implementation does not work
+
+          last_x -= -b_x;                  // find x-coordinates
+          last_y -= -b_y;                  // find y-coordinates
+
+          sum_b_x = last_x;
+          sum_b_y = last_y;
+  // Place the coordinates calculated on the graph int the right trace:
+          document.getElementById("x_axis").value = last_x;
+          document.getElementById("y_axis").value = last_y;
+
+          sentData2();
+
+        }else{
+
+        }
+      }
+
+
+  // This function allows us to update the angle when changing back to Fixed routing. Indeed we require to know the angle to use
+  // when rotating instead of using the last angle used with Fixed routing which would not be relevant.
+
+  // To do so we calculate the hypothenuse of the new coordinate compared to the previous one and apply the rules set in the situation that applies.
+
+    let angle = 0;
+    let sum_b_x = 0;
+    let sum_b_y = 0;
+    let prev_angle = 0;
+  //  let angle_sum = theta;
+    function computeAngle(){
+
+      var hyp = Math.sqrt((x_axis.value - last_x)*(x_axis.value - last_x) + (y_axis.value - last_y)*(y_axis.value - last_y));
+      // let prev_angle = theta;
+
+  // No coordinates were inputted:
+      if(x_axis.value != "" && y_axis.value != ""){ 
+        if ((x_axis.value == last_x) && (y == last_y)) {
+          angle = 0;
+        }
+  // with x_axis.value: the value of the current x coordinate and last_x the previous one      
+        else if (((x_axis.value >= last_x) && (y_axis.value >= last_y)) || ((x_axis.value <= last_x) && (y_axis.value >= last_y))) {
+          var arg = ((x_axis.value - last_x) / hyp);
+          if (arg > 1) {
+            arg = arg - 1;
+            angle = (Math.asin(arg) + pi / 2 - theta * pi / 180) * 180 / pi;
+          } else if (arg < -1) {
+            arg = arg + 1;
+            angle = (Math.asin(arg) - pi / 2 - theta * pi / 180) * 180 / pi;
+          }
+          else {
+            angle = (Math.asin(arg) - theta * pi / 180) * 180 / pi;
+          }
+          if (Math.abs(angle) > 180) {
+            angle = 360 - Math.abs(angle);
+          }
+        }
+
+        else if ((x_axis.value >= last_x) && (y_axis.value <= last_y)) {
+          var arg = ((x_axis.value - last_x) / hyp);
+          if (arg > 1) {
+            arg = arg - 1;
+            angle = (pi - Math.asin(arg) + pi / 2 - theta * pi / 180) * 180 / pi;
+          } else if (arg < -1) {
+            arg = arg + 1;
+            angle = (pi - Math.asin(arg) - pi / 2 - theta * pi / 180) * 180 / pi;
+          }
+          else {
+            angle = (pi - Math.asin(arg) - theta * pi / 180) * 180 / pi;
+          }
+        
+          if (Math.abs(angle) > 180) {
+            angle = 360 - Math.abs(angle);
+          }
+        }
+        else if ((x_axis.value <= last_x) && (y_axis.value <= last_y)) {
+          var arg = ((x_axis.value - last_x) / hyp);
+          if (arg > 1) {
+            arg = arg - 1;
+            angle = (- pi - Math.asin(arg) + pi / 2 - theta * pi / 180) * 180 / pi;
+          } else if (arg < -1) {
+            arg = arg + 1;
+            angle = (- pi - Math.asin(arg) - pi / 2 - theta * pi / 180) * 180 / pi;
+          }
+          else {
+            angle = (-pi - Math.asin(arg) - theta * pi / 180) * 180 / pi;
+          }
+          if (Math.abs(angle) > 180) {
+            angle = 360 - Math.abs(angle);
+          }
+        }
+  // Finally, we update the values by setting the actual values to the next past values and updating the angle for the Fixed Routing      
+        last_x = x_axis.value;
+        last_y = y_axis.value;
+      }else{}
+        theta -= -angle;
+      }
+      
+
+  // function that deals with the gestion of different modes design on the left hand side of the website  
+      function openMenu(evt, menuName) {
+          var i, x, tablinks;
+  // Show the tab that has been selected and none of the others        
+          x = document.getElementsByClassName("menu");
+          for (i = 0; i < x.length; i++) {
+            x[i].style.display = "none";
+          }
+  // Adds display colours for clarity and visualising effects       
+          tablinks = document.getElementsByClassName("tablink");
+          for (i = 0; i < x.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" w3-blue", "");
+          }
+          document.getElementById(menuName).style.display = "block";
+          evt.currentTarget.firstElementChild.className += " w3-blue";
+      }
+  
+  // Those command lines are auto-clicks that set high some buttons at the opening of the server
+  // Select the first link automatically and gets over written when another tab is selected
+      document.getElementById("myLink").click();
+
+  // Prints the graph automatically without needing to input coordinates at first: it just makes the Ideal and Real trace start at zero
+      document.getElementById("sendData").click();
+
+  // Connects itself to all important topics:
+      document.getElementById("onConnect").click();
+
+
+  // This next section is dedicated Live Routing implementation:
+  
+  // Initialisation of the variables used to store the directions and the speed when transmitting the data to the Rover in Live
+      let live_direction = "";
+      let speed = "1";
+      
+    
+  // Functions used to inititialising the variables for the main function: sending data
+      function setup(){
+          live_direction = 1;
+      }
+      function setleft(){
+          live_direction = 2;
+      }
+      function setstop(){
+          live_direction = 3;
+      }
+      function setright(){
+          live_direction = 4;
+      }
+      function setbottom(){
+          live_direction = 5;
+      }
+      function setslow(){
+          speed = "1";
+          document.getElementById("messages").innerHTML += 'Rover Speed: slow (1)<br>';
+      }
+      function setmedium(){
+          speed = "5";
+          document.getElementById("messages").innerHTML += 'Rover Speed: medium (5)<br>';
+      }
+      function setfast(){
+          speed = "10";
+          document.getElementById("messages").innerHTML += 'Rover Speed: fast (10)<br>';
+      }
+  
+  // Once all the data gathered, we can know implement the Live routing Commande-Mode
+  
+  // The following function puts forward the speed mode selected by highlighting its border in blue (---.style.border = "double blue")
+      function togglebuttons(){
+          if(speed =="1"){
+            document.getElementById('slow').style.border= "double blue";
+            document.getElementById('medium').style.border= "double";
+            document.getElementById('fast').style.border= "double";        
+          }else if(speed =="5"){
+            document.getElementById('slow').style.border= "double";
+            document.getElementById('medium').style.border= "double blue";
+            document.getElementById('fast').style.border= "double";        
+          }else if(speed =="10"){
+            document.getElementById('slow').style.border= "double";
+            document.getElementById('medium').style.border= "double";
+            document.getElementById('fast').style.border= "double blue";        
+          }
+      }
+
+  // Send function for the Live mode    
+      function send_mqtt_msg2() {
+          // Send an MQTT message
+          host = "3.8.124.71"; 
+          port =  8083;
+          clientID = "clientID-" + parseInt(Math.random() * 100);
+
+          client = new Paho.MQTT.Client(host, port, clientID);
+          client.connect({onSuccess:onConnect4});
+
+          updateScroll(); // Scroll to bottom of window
+      }
+
+  // Using the data initialized previously, we can now set up a connection with the Rover by sending the instructions Live
+  // To achieve this live aspect we have implemented a Stop instruction ST which is goign to break the current instruction
+  // and start the inputted one. In the mean time, while no instruction is inputted we want the Rover to keep going, explaining
+  // the big distance ("9999") after Forward and Backward.
+
+  // Finally, angles being too unreliable in a Live mode due to potential delay, we set as constant 90 degrees the rotation instructions.
+      function onConnect4() {  
+          var topic = "command";
+
+          if(live_direction == 1){
+            var msg = "ST";
+            var msg1 = "SP" + speed;
+            var msg2 = "FW" + 9999; 
+          }else if(live_direction == 2){
+            var msg = "ST";
+            var msg1 = "CC" + 90;
+            var msg2 = "SP" + speed; 
+            var msg3 = "FW" + 9999;
+          }else if(live_direction == 3){
+            live_direction = 0;    //STOP instruction
+            var msg = "ST";
+            document.getElementById("messages").innerHTML += "Rover Stopped" + '<br>';
+          }else if(live_direction == 4){
+            var msg = "ST";
+            var msg1 = "CL" + 90;
+            var msg2 = "SP" + speed;
+            var msg3 = "FW" + 9999; 
+          }else if(live_direction == 5){
+            var msg = "ST";
+            var msg1 = "SP" + speed;
+            var msg2 = "BW" + 9999; 
+          }
+          
+          message = new Paho.MQTT.Message(msg);
+          message.destinationName = topic;
+          client.send(message);
+          document.getElementById("messages").innerHTML += '<span>topic: ' + topic + ' = ' + msg + '  sent' + '</span><br/>';
+
+          message1 = new Paho.MQTT.Message(msg1);
+          message1.destinationName = topic;
+          client.send(message1);
+          document.getElementById("messages").innerHTML += '<span>topic: ' + topic + ' = ' + msg1 + '  sent' + '</span><br/>';
+
+          message2 = new Paho.MQTT.Message(msg2);
+          message2.destinationName = topic;
+          client.send(message2);
+          document.getElementById("messages").innerHTML += '<span>topic: ' + topic + ' = ' + msg2 + '  sent' + '</span><br/>';
+
+  // Only sends this message if the instruction selected is Forward or Backward because the other ones do not require speed inputs
+          if(live_direction == 2 | live_direction == 4){
+            message3 = new Paho.MQTT.Message(msg3)
+            message3.destinationName = topic;
+            client.send(message3);
+            document.getElementById("messages").innerHTML += '<span>topic: ' + topic + ' = ' + msg3 + '  sent' + '</span><br/>';
+          }
+          
+          updateScroll(); // Scroll to bottom of window
+      }
+
+
+
+  // Get the modal
+      var modal = document.getElementById("myModal");
+
+  // Get the button that opens the modal
+      var btn = document.getElementById("graphDiv");
+
+  // Get the <span> element that closes the modal
+      var span = document.getElementsByClassName("close")[0];
+
+  // When the user clicks on the the small graphic, open the modal 
+      btn.onclick = function() {
+        modal.style.display = "block";
+      }
+
+  // When the user clicks on <span> (x), close the modal
+      span.onclick = function() {
+        modal.style.display = "none";
+      }
+
+  // When the user clicks anywhere outside of the modal, close it
+      window.onclick = function(event) {
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      }
+  // We wanted to add a more visible way of transmiting the information (Battery related), thus we used progress bar:
+  // Let the progress bar change color with ranges: [0:20]=red | [21:50]=yellow | [51:100]= green;
+      function getBatteryClasses(name){
+        let classes = "w3-right ";
+        classes += (document.getElementById(name).value > "50.00") ? "progress-100" : ((document.getElementById(name).value > "20.00") ? "progress-50" : "progress-20");
+        return classes;
+      }
+  
+  // This function allows us to compute the theoretical value of the range the Rover could go with the current level
+  // and state of the Battery. This value is theoretical as we could not use the real data from the Battery and thus are
+  // only going throught all the values decrementing every second the level of the battery  and at the end of every cycle
+  // of a battery change the state of the Baterry by 10%
+      function roverRangeCalc(){
+      let range = 0;
+
+      if(document.getElementById("range").value == "1"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.023)/(50*100);
+      }else if(document.getElementById("range").value == "2"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.061)/(62*100);
+      }else if(document.getElementById("range").value == "3"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.087)/(74*100);
+      }else if(document.getElementById("range").value == "4"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.109)/(87*100);
+      }else if(document.getElementById("range").value == "5"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.123)/(95.5*100);
+      }else if(document.getElementById("range").value == "6"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.149)/(109*100);
+      }else if(document.getElementById("range").value == "7"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.157)/(128*100);
+      }else if(document.getElementById("range").value == "8"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.166)/(152*100);
+      }else if(document.getElementById("range").value == "9"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.175)/(176*100);
+      }else if(document.getElementById("range").value == "10"){
+        range = Math.floor(document.getElementById("battery").value * (1140 - 20*((100-document.getElementById("battery_heal").value)/10)) * 3600 * 0.187)/(198*100);
+      }
+      return range;
+      }
+
+
+    </script>
+
+  </s2></body>
+  
+</html>
