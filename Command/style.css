@@ -160,15 +160,12 @@ progress {
 .progress-100::-webkit-progress-value {
   background-color: green;
 }
-
 .progress-50::-webkit-progress-value {
   background-color: yellow;
 }
-
 .progress-20::-webkit-progress-value {
   background-color: red;
 }
-
 progress::-webkit-progress-bar {
   background: lightgray;
 }

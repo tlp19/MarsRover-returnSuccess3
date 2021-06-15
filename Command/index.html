@@ -3,7 +3,7 @@
 
   <head>
     <!-- Icon of rover/robot for the webserver -->
-    <link rel="icon" href="%PUBLIC_URL%/icon.png"/>
+    <link rel="icon" href="icon.png"/>
 
     <!-- Icons from fontawesom -->
     <script src="https://kit.fontawesome.com/b99c39e948.js" crossorigin="anonymous"></script>
@@ -1028,7 +1028,8 @@
   // Let the progress bar change color with ranges: [0:20]=red | [21:50]=yellow | [51:100]= green;
       function getBatteryClasses(name){
         let classes = "w3-right ";
-        classes += (document.getElementById(name).value > "50.00") ? "progress-100" : ((document.getElementById(name).value > "20.00") ? "progress-50" : "progress-20");
+        classes += (document.getElementById(name).value > "50.00") ? "progress-100" : 
+                   ((document.getElementById(name).value > "20.00") ? "progress-50" : "progress-20");
         return classes;
       }
   
