@@ -6,6 +6,12 @@ For this project, we built a Robot (Mars Rover) and developed the software to co
 
 </br>
 
+You can find below a video demonstration of our Rover's capabilities:
+
+[![Watch the video](https://img.youtube.com/vi/-rey-J0QVjc/hqdefault.jpg)](https://youtu.be/-rey-J0QVjc)
+
+</br>
+
 Each part of the project was done by:
  - [Command](Command/): Bertil de Germay ([@bd519](https://github.com/bd519))
  - [Control](Control/): Tanguy Perron ([@tlp19](https://github.com/tlp19))
