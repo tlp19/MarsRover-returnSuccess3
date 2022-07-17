@@ -6,11 +6,15 @@ For this project, we built a Robot (Mars Rover) and developed the software to co
 
 </br>
 
+## Video demonstration
+
 You can find below a video demonstration of our Rover's capabilities:
 
 [![Watch the video](https://img.youtube.com/vi/-rey-J0QVjc/hqdefault.jpg)](https://youtu.be/-rey-J0QVjc)
 
 </br>
+
+## Credits
 
 Each part of the project was done by:
  - [Command](Command/): Bertil de Germay ([@bd519](https://github.com/bd519))
@@ -19,3 +23,5 @@ Each part of the project was done by:
  - [Energy](Energy/): Jordan Chin ([@jyc119](https://github.com/jyc119))
  - [Vision](Vision/): Jason Tang ([@Guessedlake72](https://github.com/Guessedlake72))
  - Hardware Integration: Daniel Romano ([@danieljohnromano](https://github.com/danieljohnromano))
+ 
+With, of course, high level of collaborations between team members.
